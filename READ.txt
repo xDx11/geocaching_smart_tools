@@ -1,3 +1,17 @@
-Geocaching smart tools...
+Titul: 		Geocaching smart tools
+Podtitul: 	Podpùrná aplikace s pomocnými nástroji pro GPS hru Geocaching - https://cs.wikipedia.org/wiki/Geocaching
+Mob. platforma: Android
 
-description...
+SMART èást:
+	- práce s mapou a geolokací
+		- geofancing
+		- meøení vzdáleností k cílovému místu
+		- algoritmy pro plánování trasy pro sbírání geocaches.
+	- práce se sensory mobilu pro využití jako pomocných nástrojù ke høe
+		- kompas, 
+		- "PointToPoint" radar (jdi za šipkou)
+		- svìtlo atd.
+NonSmart èást:
+	- ruèní zadávání geocaches
+	- hromadný import geocaches
+	- poznámky
