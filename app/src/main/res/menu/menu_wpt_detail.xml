@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:tools="http://schemas.android.com/tools"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:mapToolTest2="http://schemas.android.com/apk/res-auto"
+    tools:context=".caches.AddCacheActivity"
+    >
+        <item
+            android:id="@+id/action_pairing_wpt_detail"
+            android:icon="@drawable/ico_pairing_white"
+            android:title="Parovani"
+            mapToolTest2:showAsAction="always"
+            />
+
+        <item
+            android:id="@+id/action_is_found"
+            android:icon="@drawable/ico_ok_128"
+            android:title="Cache was found!"
+            mapToolTest2:showAsAction="always"
+            />
+
+
+</menu>

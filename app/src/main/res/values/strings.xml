@@ -1,0 +1,115 @@
+<resources>
+    <string name="app_name">Geoca(t)cher</string>
+    <string-array name="cyphers_array">
+        <item>Morseovka</item>
+        <item>GeoCypher</item>
+        <item>Ciferace</item>
+    </string-array>
+
+    <string-array name="reverse_cyphers_array">
+        <item>Morseovka</item>
+        <item>GeoCypher</item>
+    </string-array>
+
+    <string name="no_notes_available">Nemáte uloženy žádné poznámky.</string>
+    <string name="delete">Smazat</string>
+    <string name="edit">Upravit</string>
+    <string name="note_deleted">Poznámka smazána.</string>
+    <string name="note_not_deleted">Ups, poznámku se nepodařilo smazat :(.</string>
+
+    <string name="add_note">Přidání poznámky</string>
+    <string name="edit_note">Úprava poznámky</string>
+    <string name="error">Chyba</string>
+
+    <string name="title">Titulek</string>
+    <string name="text">Text</string>
+    <string name="submit">Uložit</string>
+    <string name="note_not_added">Jejda, poznámku se nepodařilo uložit :(.</string>
+    <string name="is_important">Důležité?</string>
+    <string name="important">Ano</string>
+    <string name="date_time">Datum</string>
+    <string name="poznamka">Poznámka</string>
+
+    <string name="name_cache">Název:</string>
+    <string name="type_cache">Typ:</string>
+    <string name="size_cache">Velikost:</string>
+    <string name="help_cache">Nápověda:</string>
+    <string name="diff_cache">Obtížnost:</string>
+    <string name="terr_cache">Terén:</string>
+    <string name="lon_cache">Lon:</string>
+    <string name="lat_cache">Lat:</string>
+
+    <string name="trad_cache">Traditional</string>
+    <string name="multi_cache">Multi</string>
+    <string name="mystery_cache">Mystery</string>
+
+    <string name="micro_cache">Micro</string>
+    <string name="small_cache">Small</string>
+    <string name="regular_cache">Regular</string>
+    <string name="large_cache">Large</string>
+    <string name="other_cache">Other</string>
+
+    <string-array name="terrain_arrays">
+        <item>1</item>
+        <item>1.5</item>
+        <item>2</item>
+        <item>2.5</item>
+        <item>3</item>
+        <item>3.5</item>
+        <item>4</item>
+        <item>4.5</item>
+        <item>5</item>
+    </string-array>
+    <string-array name="size_arrays">
+        <item>Micro</item>
+        <item>Small</item>
+        <item>Regular</item>
+        <item>Large</item>
+        <item>Other</item>
+    </string-array>
+
+    <string-array name="menu_caches">
+        <item>Edit</item>
+        <item>Del</item>
+
+    </string-array>
+
+    <string name="cache_not_added">Jejda, kes se nepodařilo uložit :(.</string>
+    <string name="cache_deleted">Kes smazána.</string>
+    <string name="cache_not_deleted">Ups, kes se nepodařilo smazat :(.</string>
+    <string name="location_cache">Souradnice:</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="title_activity_detail_cache">DetailCacheActivity</string>
+    <string name="location_degrees_cache">Stupně:</string>
+    <string name="location_minutes_cache">Minuty:</string>
+    <string name="heading">Stupně: 0.0</string>
+    <string name="power">Power</string>
+    <string name="mainMap">Mapa</string>
+    <string name="mainCompass">Kompas</string>
+    <string name="mainCaches">Kešky</string>
+    <string name="mainNotes">Poznámky</string>
+    <string name="mainCyphers">Šifrování</string>
+    <string name="mainFlash">Baterka</string>
+    <string name="distance">Vzdálenost</string>
+    <string name="inputText">Vstupní text</string>
+    <string name="textToCypher"><![CDATA[Text ---> Šifra]]></string>
+    <string name="cypherToText"><![CDATA[Šifra ---> Text]]></string>
+    <string name="Translate">Přeložit</string>
+    <string name="outputText">Výstupní text</string>
+    <string name="deleteCache">Smazat</string>
+    <string name="editCache">Upravit</string>
+    <string name="code">Kod:</string>
+    <string name="url">URL:</string>
+    <string name="desc">Popis</string>
+    <string name="title_activity_maps">Map</string>
+    <string name="importGPX">Import GPX</string>
+    <string name="importLOC">Import LOC</string>
+    <string name="oneCache">Find one!</string>
+    <string name="findAll">Find all!</string>
+    <string name="geofencing">Geofencing</string>
+    <string name="detailLogs"><![CDATA[Logy]]></string>
+    <string name="noLogs">Keš neobsahuje žádné logy.</string>
+
+</resources>

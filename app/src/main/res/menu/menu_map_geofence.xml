@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:tools="http://schemas.android.com/tools"
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:xmlparser="http://schemas.android.com/apk/res-auto"
+        tools:context=".caches.MapsActivity"
+        >
+
+    <item
+        android:id="@+id/action_enable_geofence"
+        android:title="On/Off Geofence"
+        xmlparser:showAsAction="always"
+        />
+
+    <item
+        android:id="@+id/action_geofence_radius"
+        android:title="Radius options"
+        xmlparser:showAsAction="always"
+        />
+
+</menu>

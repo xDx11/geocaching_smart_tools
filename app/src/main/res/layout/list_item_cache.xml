@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal" android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/layer_list"
+    android:paddingLeft="10dp">
+
+
+    <ImageView
+        android:layout_width="25dp"
+        android:layout_height="25dp"
+        android:id="@+id/imageView_type_cache"
+        android:background="@android:drawable/stat_sys_warning"
+        android:layout_gravity="top|right"
+        android:layout_centerVertical="true"
+        android:layout_alignRight="@+id/textView_item_name"
+        android:layout_alignEnd="@+id/textView_item_name"
+        android:layout_marginRight="10dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:text="Small Text"
+        android:id="@+id/textView_location_cache"
+        android:layout_below="@+id/textView_item_name"
+        android:layout_alignLeft="@+id/textView_item_name"
+        android:layout_alignStart="@+id/textView_item_name"
+        android:textSize="10sp"
+        android:textColor="@drawable/sel_list_item_text"
+        android:duplicateParentState="true"
+        android:layout_marginBottom="5dp" />
+
+    <ImageView
+
+        android:layout_width="3dp"
+        android:layout_height="wrap_content"
+        android:id="@+id/status_found"
+        android:background="@drawable/red_status"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentRight="true"
+        android:minHeight="?android:attr/listPreferredItemHeightSmall"
+        android:maxHeight="?android:attr/listPreferredItemHeightLarge"
+        android:layout_centerHorizontal="true"
+        android:layout_centerVertical="true" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:text="Large Text"
+        android:id="@+id/textView_item_name"
+        android:textColor="@color/colorWhite"
+        android:background="@android:color/transparent"
+        android:textSize="20sp"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true" />
+
+</RelativeLayout>

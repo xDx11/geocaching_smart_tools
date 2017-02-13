@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/activity_main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    android:background="@color/colorDarkGrey"
+    tools:context="cz.uhk.fim.soucera.geocatcher.MainActivity"
+    >
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true">
+
+        <ImageButton
+            android:layout_width="90dp"
+            android:layout_height="90dp"
+            android:id="@+id/btn_map"
+            android:src="@drawable/ico_map"
+            android:scaleType="fitXY"
+            android:padding="5dp"
+            android:layout_marginLeft="50dp"
+            android:layout_marginStart="51dp"
+            android:layout_marginTop="45dp"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:background="@drawable/button_main_activity" />
+
+        <ImageButton
+            android:layout_width="90dp"
+            android:layout_height="90dp"
+            android:src="@drawable/ico_geo"
+            android:scaleType="fitXY"
+            android:padding="5dp"
+            android:id="@+id/btn_caches"
+            android:layout_alignTop="@+id/btn_map"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true"
+            android:layout_marginRight="50dp"
+            android:layout_marginEnd="50dp"
+            android:background="@drawable/button_main_activity" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:text="@string/mainMap"
+            android:id="@+id/textView_item_name"
+            android:layout_below="@+id/btn_map"
+            android:layout_alignLeft="@+id/btn_map"
+            android:layout_alignStart="@+id/btn_map"
+            android:layout_alignRight="@+id/btn_map"
+            android:layout_alignEnd="@+id/btn_map"
+            android:textColor="@color/colorWhite"
+            android:layout_marginTop="5dp"
+            android:gravity="center" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:text="@string/mainCaches"
+            android:id="@+id/textView2"
+            android:textColor="@color/colorWhite"
+            android:layout_below="@+id/btn_caches"
+            android:layout_alignLeft="@+id/btn_caches"
+            android:layout_alignStart="@+id/btn_caches"
+            android:layout_alignRight="@+id/btn_caches"
+            android:layout_alignEnd="@+id/btn_caches"
+            android:layout_marginTop="5dp"
+            android:gravity="center" />
+
+    </RelativeLayout>
+
+    <ImageButton
+        android:layout_width="90dp"
+        android:layout_height="90dp"
+        android:src="@drawable/ico_flashlight"
+        android:scaleType="fitXY"
+        android:padding="10dp"
+        android:id="@+id/btn_flashlight"
+        android:background="@drawable/button_main_activity"
+        android:layout_marginLeft="52dp"
+        android:layout_marginStart="52dp"
+        android:layout_centerVertical="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true" />
+
+    <ImageButton
+        android:layout_width="90dp"
+        android:layout_height="90dp"
+        android:src="@drawable/ico_compass"
+        android:scaleType="fitXY"
+        android:padding="5dp"
+        android:id="@+id/btn_compass"
+        android:background="@drawable/button_main_activity"
+        android:layout_marginLeft="47dp"
+        android:layout_marginStart="47dp"
+        android:layout_alignTop="@+id/btn_flashlight"
+        android:layout_toRightOf="@+id/btn_flashlight"
+        android:layout_toEndOf="@+id/btn_flashlight" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:text="@string/mainFlash"
+        android:id="@+id/textView6"
+        android:layout_below="@+id/btn_flashlight"
+        android:layout_alignLeft="@+id/btn_flashlight"
+        android:layout_alignStart="@+id/btn_flashlight"
+        android:layout_alignRight="@+id/btn_flashlight"
+        android:layout_alignEnd="@+id/btn_flashlight"
+        android:textColor="@color/colorWhite"
+        android:layout_marginTop="5dp"
+        android:gravity="center"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:text="@string/mainCompass"
+        android:id="@+id/textView3"
+        android:gravity="center"
+        android:layout_below="@+id/btn_compass"
+        android:layout_alignLeft="@+id/btn_compass"
+        android:layout_alignStart="@+id/btn_compass"
+        android:layout_alignRight="@+id/btn_compass"
+        android:layout_alignEnd="@+id/btn_compass"
+        android:textColor="@color/colorWhite"
+        android:layout_marginTop="5dp" />
+
+    <ImageButton
+        android:layout_width="90dp"
+        android:layout_height="90dp"
+        android:src="@drawable/import_yellow_desc"
+        android:scaleType="fitXY"
+        android:padding="10dp"
+        android:id="@+id/btn_importGPX"
+        android:background="@drawable/button_main_activity"
+        android:layout_marginTop="40dp"
+        android:layout_below="@+id/textView6"
+        android:layout_alignLeft="@+id/textView6"
+        android:layout_alignStart="@+id/textView6" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:text="@string/importGPX"
+        android:id="@+id/textView5"
+        android:textColor="@color/colorWhite"
+        android:layout_below="@+id/btn_importGPX"
+        android:layout_alignLeft="@+id/btn_importGPX"
+        android:layout_alignStart="@+id/btn_importGPX"
+        android:layout_alignRight="@+id/btn_importGPX"
+        android:layout_alignEnd="@+id/btn_importGPX"
+        android:layout_marginTop="5dp"
+        android:gravity="center" />
+
+    <ImageButton
+        android:layout_width="90dp"
+        android:src="@drawable/import_blue_desc"
+        android:scaleType="fitXY"
+        android:padding="10dp"
+        android:id="@+id/btn_importLOC"
+        android:background="@drawable/button_main_activity"
+        android:layout_alignTop="@+id/btn_importGPX"
+        android:layout_alignLeft="@+id/textView3"
+        android:layout_alignStart="@+id/textView3"
+        android:layout_height="90dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:text="@string/importLOC"
+        android:id="@+id/textView4"
+        android:textColor="@color/colorWhite"
+        android:layout_below="@+id/btn_importLOC"
+        android:layout_alignLeft="@+id/btn_importLOC"
+        android:layout_alignStart="@+id/btn_importLOC"
+        android:layout_alignRight="@+id/btn_importLOC"
+        android:layout_alignEnd="@+id/btn_importLOC"
+        android:layout_marginTop="5dp"
+        android:gravity="center" />
+</RelativeLayout>

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+    <LinearLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingBottom="3dp"
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp"
+        android:paddingTop="3dp"
+        android:background="@drawable/layer_list"
+        >
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <ImageView
+                android:id="@+id/imageView_log_type"
+                android:background="@android:drawable/stat_sys_warning"
+                android:layout_gravity="center_vertical"
+                android:layout_height="15dp"
+                android:layout_width="15dp" />
+
+            <TextView
+                android:text="Finder"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/tv_log_finder"
+                android:textColor="@color/colorWhite"
+                android:background="@android:color/transparent"
+                android:textSize="20sp"
+                android:layout_marginLeft="10dp" />
+
+            <TextView
+                android:text="Type"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/tv_log_type"
+                android:textColor="@color/colorWhite"
+                android:background="@android:color/transparent"
+                android:textSize="18sp"
+                android:layout_weight="1"
+                android:layout_marginLeft="10dp" />
+
+        </LinearLayout>
+
+        <TextView
+            android:text="Date"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/colorWhite"
+            android:background="@android:color/transparent"
+            android:textSize="18sp"
+            android:id="@+id/tv_log_date" />
+
+        <TextView
+            android:text="Text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/tv_log_text"
+            android:textColor="@color/colorWhite"
+            android:background="@android:color/transparent"
+            android:textSize="15sp"
+            android:layout_weight="1"
+            android:layout_marginTop="3dp" />
+
+        <View
+            android:id="@+id/itemDivider"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/colorAccent"
+
+            android:layout_marginTop="2dp" />
+    </LinearLayout>

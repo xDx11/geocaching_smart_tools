@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:tools="http://schemas.android.com/tools"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:xmlparser="http://schemas.android.com/apk/res-auto"
+    tools:context=".caches.DetailCacheActivity">
+
+    <item
+        android:id="@+id/action_main_filter_caches"
+        android:title="Filter: zobrazení keší"
+        xmlparser:showAsAction="always"
+        />
+
+    <item
+        android:id="@+id/action_found_caches"
+        android:title="Nalezené keše"
+        xmlparser:showAsAction="always"
+        />
+
+    <item
+        android:id="@+id/action_not_found_caches"
+        android:title="Nenalezené keše"
+        xmlparser:showAsAction="always"
+        />
+
+    <item
+        android:id="@+id/action_load_complete_listings"
+        android:title="Načítání listingů"
+        xmlparser:showAsAction="always"
+        />
+
+    <item
+        android:id="@+id/action_sorting_listview"
+        android:title="Řazení"
+        xmlparser:showAsAction="always"
+        />
+
+</menu>

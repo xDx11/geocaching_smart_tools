@@ -1,0 +1,30 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="cz.uhk.fim.soucera.geocatcher.MapsActivity"
+    >
+
+
+    <fragment xmlns:android="http://schemas.android.com/apk/res/android"
+            xmlns:map="http://schemas.android.com/apk/res-auto"
+            xmlns:tools="http://schemas.android.com/tools"
+            android:id="@+id/map"
+            android:name="com.google.android.gms.maps.SupportMapFragment"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            tools:context="cz.uhk.fim.soucera.geocatcher.MapsActivity" />
+
+    <TextView
+        android:text="Vzdalenost"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/textViewMapDistance"
+        android:textColor="@color/colorWhite"
+        android:background="#70000000"
+        android:layout_marginLeft="60dp"
+        android:padding="5dp"
+        android:layout_gravity="top|left"
+        android:layout_marginTop="16dp" />
+
+</FrameLayout>

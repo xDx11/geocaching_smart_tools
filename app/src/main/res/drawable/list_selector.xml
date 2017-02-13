@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:state_pressed="true"
+        android:drawable="@drawable/list_selector_pressed"
+        />
+
+    <item
+        android:state_focused="true"
+        android:drawable="@drawable/list_selector_focused"
+        android:textColor="@android:color/black"
+
+        />
+
+    <item
+        android:state_active="true"
+        android:drawable="@drawable/list_selector_normal"
+        android:textColor="@color/colorPrimary"
+        />
+
+    <item
+        android:drawable="@drawable/list_selector_normal"
+        />
+
+
+</selector>

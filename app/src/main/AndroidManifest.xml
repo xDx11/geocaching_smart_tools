@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="cz.uhk.fim.soucera.geocatcher">
+
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES" />
+    <!--
+         The ACCESS_COARSE/FINE_LOCATION permissions are not required to use
+         Google Maps Android API v2, but you must specify either coarse or fine
+         location permissions for the 'MyLocation' functionality.
+    -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.FLASHLIGHT" />
+
+    <uses-feature android:name="android.hardware.camera" />
+    <uses-feature android:name="android.hardware.camera.autofocus" />
+    <uses-feature android:name="android.hardware.camera.flash" />
+    <uses-feature
+        android:glEsVersion="0x00020000"
+        android:required="true" />
+
+    <application
+        android:name="cz.uhk.fim.soucera.geocatcher.Geocatcher"
+        android:allowBackup="true"
+        android:icon="@drawable/logoxx"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="@string/google_maps_key" />
+
+        <activity
+            android:name="cz.uhk.fim.soucera.geocatcher.MainActivity"
+            android:screenOrientation="portrait">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="cz.uhk.fim.soucera.geocatcher.caches.MainCachesActivity"
+            android:label="@string/mainCaches"
+            android:parentActivityName="cz.uhk.fim.soucera.geocatcher.MainActivity" />
+        <activity
+            android:name="cz.uhk.fim.soucera.geocatcher.caches.AddCacheActivity"
+            android:label="@string/mainCaches"
+            android:parentActivityName="cz.uhk.fim.soucera.geocatcher.caches.MainCachesActivity" />
+        <activity
+            android:name="cz.uhk.fim.soucera.geocatcher.caches.DetailCacheActivity"
+            android:label="@string/mainCaches"
+            android:parentActivityName="cz.uhk.fim.soucera.geocatcher.caches.MainCachesActivity" />
+        <activity
+            android:name="cz.uhk.fim.soucera.geocatcher.caches.EditCacheActivity"
+            android:label="@string/mainCaches"
+            android:parentActivityName="cz.uhk.fim.soucera.geocatcher.caches.MainCachesActivity" />
+        <activity
+            android:name="cz.uhk.fim.soucera.geocatcher.caches.SelectCachesActivity"
+            android:label="@string/mainCaches"
+            android:parentActivityName="cz.uhk.fim.soucera.geocatcher.MapsActivity" />
+        <activity
+            android:name="cz.uhk.fim.soucera.geocatcher.MapsActivity"
+            android:label="@string/title_activity_maps"
+            android:parentActivityName="cz.uhk.fim.soucera.geocatcher.MainActivity"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name="cz.uhk.fim.soucera.geocatcher.features.FlashActivity"
+            android:label="@string/mainFlash"
+            android:parentActivityName="cz.uhk.fim.soucera.geocatcher.MainActivity"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name="cz.uhk.fim.soucera.geocatcher.features.CompassActivity"
+            android:label="@string/mainCompass"
+            android:parentActivityName="cz.uhk.fim.soucera.geocatcher.MainActivity"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name="cz.uhk.fim.soucera.geocatcher.caches.SelectDetailCacheActivity"
+            android:label="@string/mainCaches"
+            android:parentActivityName="cz.uhk.fim.soucera.geocatcher.MapsActivity" />
+        <activity
+            android:name="cz.uhk.fim.soucera.geocatcher.features.PointToPointActivity"
+            android:label="@string/title_activity_maps"
+            android:parentActivityName="cz.uhk.fim.soucera.geocatcher.MapsActivity" />
+
+        <service android:name="cz.uhk.fim.soucera.geocatcher.GeofenceTransitionsIntentService" />
+
+        <activity android:name="cz.uhk.fim.soucera.geocatcher.waypoints.DetailWptActivity"
+            android:parentActivityName="cz.uhk.fim.soucera.geocatcher.MapsActivity"
+            />
+    </application>
+
+</manifest>
