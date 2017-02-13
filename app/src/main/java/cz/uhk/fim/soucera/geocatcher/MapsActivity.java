@@ -186,7 +186,10 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 System.out.println("RESULT FROM DETAIL = RESULT_OK");
             }
             if (resultCode == Activity.RESULT_CANCELED) {
-                findCaches(filterFind, filterType);
+                if(data.getIntExtra("id", 0) > 0)
+                    findSelectedCache(data);
+                else
+                    findCaches(filterFind, filterType);
                 System.out.println("RESULT FROM DETAIL = RESULT_CANCELED");
             }
         } else if (requestCode == SELECT_CACHE_ACTIVITY) {
@@ -197,6 +200,18 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 System.out.println("RESULT FROM SELECT = RESULT_CANCELED");
             }
         }
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle savedInstanceState) {
+        super.onSaveInstanceState(savedInstanceState);
+
+    }
+
+    @Override
+    public void onRestoreInstanceState(Bundle savedInstanceState) {
+
+
     }
 
     @Override

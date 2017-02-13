@@ -29,6 +29,7 @@ public class DetailWptActivity extends AppCompatActivity {
 
     private static final String TAG = DetailWptActivity.class.getName();
     private int id;
+    private int cache_id;
     private long longId;
     private Waypoint wpt;
     private MenuItem menuItem_Found;
@@ -98,6 +99,11 @@ public class DetailWptActivity extends AppCompatActivity {
         Caches_DB caches_db = new Caches_DB(ctx);
         wpt = caches_db.getWpt(id);
         caches_db.close();
+
+        if(wpt.getId_cache() > 0)
+            cache_id = wpt.getId_cache();
+        else
+            cache_id = 0;
 
         if(wpt.getId_cache()>-1){
             setCacheName(wpt.getId_cache());
@@ -195,10 +201,16 @@ public class DetailWptActivity extends AppCompatActivity {
                 startActivityForResult(serverSetIntent, SELECT_CACHE_ACTIVITY);
                 return true;
             case android.R.id.home:
-                Intent returnIntent = new Intent();
-                setResult(Activity.RESULT_CANCELED, returnIntent);
-                finish();
-                return true;
+                try {
+                    Intent returnIntent = new Intent();
+                    if(cache_id>0)
+                        returnIntent.putExtra("id", cache_id);
+                    setResult(Activity.RESULT_CANCELED, returnIntent);
+                    finish();
+                    return true;
+                } catch (Exception e){
+                    e.printStackTrace();
+                }
         }
         return true;
     }
@@ -243,9 +255,16 @@ public class DetailWptActivity extends AppCompatActivity {
     }
 
     public void onBackPressed(){
-        Intent returnIntent = new Intent();
-        setResult(Activity.RESULT_CANCELED, returnIntent);
-        finish();
+        try {
+            Intent returnIntent = new Intent();
+            if(cache_id>0)
+                returnIntent.putExtra("id", cache_id);
+            setResult(Activity.RESULT_CANCELED, returnIntent);
+            finish();
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+
     }
 
     private void isFound(int id){
