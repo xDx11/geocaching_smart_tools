@@ -205,6 +205,7 @@ public class DetailWptActivity extends AppCompatActivity {
                     Intent returnIntent = new Intent();
                     if(cache_id>0)
                         returnIntent.putExtra("id", cache_id);
+                    returnIntent.putExtra("idWpt", id);
                     setResult(Activity.RESULT_CANCELED, returnIntent);
                     finish();
                     return true;
@@ -259,6 +260,7 @@ public class DetailWptActivity extends AppCompatActivity {
             Intent returnIntent = new Intent();
             if(cache_id>0)
                 returnIntent.putExtra("id", cache_id);
+            returnIntent.putExtra("idWpt", id);
             setResult(Activity.RESULT_CANCELED, returnIntent);
             finish();
         } catch (Exception e){

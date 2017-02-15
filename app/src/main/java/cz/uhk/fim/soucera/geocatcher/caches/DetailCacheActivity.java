@@ -94,7 +94,8 @@ public class DetailCacheActivity extends AppCompatActivity {
     public void onBackPressed(){
         //Intent i = new Intent(this, MainCachesActivity.class);
         //startActivityForResult(i, 0);
-         finish();
+
+        finish();
         //finishActivity(0);
     }
 

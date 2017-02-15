@@ -35,4 +35,10 @@
         xmlparser:showAsAction="always"
         />
 
+    <item
+        android:id="@+id/action_planning_route"
+        android:title="Trasa"
+        xmlparser:showAsAction="always"
+        />
+
 </menu>

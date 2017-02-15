@@ -37,6 +37,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -62,6 +63,8 @@ import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -94,6 +97,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private Location mLastLocation;
     private Marker marker;
     private ArrayList<Marker> markers;
+    private ArrayList<Marker> routePoints;
+    private ArrayList<Polyline> polylines;
     private Cache followCache;
     private Waypoint followWpt;
     private static String[] PERMISSIONS_MAPS = {
@@ -114,11 +119,17 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private boolean isMarkerFollow = false;
     private boolean isGeofencingEnabled;
     private boolean isShowWptsEnabled;
+    private boolean isShortestWayEnabled;
+    private boolean isTraceClicked;
+    private boolean isTraceCreated;
     private TextView viewDistance;
+    private int pomIndex;
+    private double totalDistance;
     private
     @Nullable
     PopupMenu popup;
 
+    public static final int MY_PERMISSIONS_REQUEST_LOCATION = 99;
     private static final long GEO_DURATION = 60 * 60 * 1000;
     private static float GEOFENCE_RADIUS = 100.0f; // in meters
     private PendingIntent geoFencePendingIntent;
@@ -133,11 +144,10 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private static final int FILTER_MULTI = 2;
     private static final int FILTER_MYSTERY = 3;
 
-
     private SharedPreferences preferenceSettings;
     private SharedPreferences.Editor preferenceEditor;
     private static final int PREFERENCE_MODE_PRIVATE = 0;
-
+    private SupportMapFragment mapFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -147,7 +157,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             checkLocationPermission();
         }
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(map);
+        mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(map);
         mapFragment.getMapAsync(this);
 
         viewDistance = (TextView) findViewById(R.id.textViewMapDistance);
@@ -186,7 +196,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 System.out.println("RESULT FROM DETAIL = RESULT_OK");
             }
             if (resultCode == Activity.RESULT_CANCELED) {
-                if(data.getIntExtra("id", 0) > 0)
+                if (data.getIntExtra("id", 0) > 0)
                     findSelectedCache(data);
                 else
                     findCaches(filterFind, filterType);
@@ -200,6 +210,42 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 System.out.println("RESULT FROM SELECT = RESULT_CANCELED");
             }
         }
+        try{
+            if(requestCode == 11) {
+                int id = data.getIntExtra("idCache", 0);
+                int idWpt = data.getIntExtra("idWpt", 0);
+                if(id > 0) {
+                    Caches_DB cachesDB = new Caches_DB(getApplicationContext());
+                    Cache cache = cachesDB.getCache(id);
+                    cachesDB.close();
+                    for (int i = 0; i < markers.size(); i++) {
+                        if (markers.get(i).getTag() instanceof Cache) {
+                            Cache markerCache = (Cache) markers.get(i).getTag();
+                            if (markerCache.getId() == cache.getId()) {
+                                markers.get(i).setTag(cache);
+                            }
+                        }
+                    }
+                }
+                if(idWpt > 0){
+                    Caches_DB cachesDB = new Caches_DB(getApplicationContext());
+                    Waypoint wpt = cachesDB.getWpt(idWpt);
+                    cachesDB.close();
+                    for (int i = 0; i < markers.size(); i++) {
+                        if (markers.get(i).getTag() instanceof Waypoint) {
+                            Waypoint markerWpt = (Waypoint) markers.get(i).getTag();
+                            if (markerWpt.getId() == wpt.getId()) {
+                                markers.get(i).setTag(wpt);
+                            }
+                        }
+                    }
+                }
+                recolorMarkers();
+            }
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+
     }
 
     @Override
@@ -338,7 +384,19 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 preferenceEditor = preferenceSettings.edit();
                 preferenceEditor.putBoolean("isShowWptsEnabled", isShowWptsEnabled);
                 preferenceEditor.apply();
-                findCaches(filterFind, filterType);
+                //findCaches(filterFind, filterType);
+                findWpts(filterFind);
+
+                return true;
+            case R.id.action_planning_route:
+                Log.i(TAG, "MenuClick_track_route");
+                recolorMarkers();
+                isShortestWayEnabled = true;
+                routePoints = new ArrayList<>();
+                viewDistance.setVisibility(View.VISIBLE);
+                viewDistance.setText("Seznam bodu trasy: \n" +
+                        "Nastavite zvolenim ukazatelu na mape."
+                );
                 return true;
             case R.id.action_enable_geofence:
                 Log.i(TAG, "MenuClick_enable_geofence_radius");
@@ -379,6 +437,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             initializeMapTraffic();
             initializeMapType();
             initializeMapViewSettings();
+            compassPositionLayout();
 
             Intent intent = getIntent();
             int id = intent.getIntExtra("id", 0);
@@ -442,6 +501,26 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         googleMap.setBuildingsEnabled(false);
     }
 
+    public void compassPositionLayout(){
+        try {
+            if (mapFragment != null) {
+                if (mapFragment.getView().findViewById(Integer.parseInt("1")) != null) {
+                    // Get the view
+                    View locationCompass = ((View) mapFragment.getView().findViewById(Integer.parseInt("1")).getParent()).findViewById(Integer.parseInt("5"));
+                    // and next place it, on bottom right (as Google Maps app)
+                    RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams)
+                            locationCompass.getLayoutParams();
+                    // position on right bottom
+                    layoutParams.addRule(RelativeLayout.ALIGN_PARENT_TOP, RelativeLayout.TRUE);
+                    //layoutParams.addRule(RelativeLayout.ALIGN_PARENT_RIGHT, RelativeLayout.TRUE);
+                    layoutParams.setMargins(0, 100, 20, 0); // 160 la truc y , 30 la  truc x
+                }
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
     protected synchronized void buildGoogleApiClient() {
         if (checkPlayServices()) {
             Log.i(TAG, "Build Google API Client.");
@@ -495,6 +574,42 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     @Override
+    public void onCameraMove() {
+        CameraPosition cameraPosition = googleMap.getCameraPosition();
+        if (previousZoomLevel != cameraPosition.zoom) {
+            isZooming = true;
+            previousZoomLevel = cameraPosition.zoom;
+        }
+    }
+
+    @Override
+    public void onCameraMoveStarted(int reason) {
+
+        if (reason == GoogleMap.OnCameraMoveStartedListener.REASON_GESTURE) {
+            CameraPosition cameraPosition = googleMap.getCameraPosition();
+            if (previousZoomLevel != cameraPosition.zoom) {
+                isZooming = true;
+                previousZoomLevel = cameraPosition.zoom;
+            }
+            isMoving = true;
+            //Toast.makeText(this, "The user gestured on the map. = MOVE", Toast.LENGTH_SHORT).show();
+        }
+        /*
+        else if (reason == GoogleMap.OnCameraMoveStartedListener.REASON_API_ANIMATION) {
+            //Toast.makeText(this, "The user tapped something on the map. = CLICK BUTTON",Toast.LENGTH_SHORT).show();
+        } else if (reason == GoogleMap.OnCameraMoveStartedListener.REASON_DEVELOPER_ANIMATION) {
+            //Toast.makeText(this, "The app moved the camera.", Toast.LENGTH_SHORT).show();
+        }
+        */
+    }
+
+    @Override
+    public boolean onMyLocationButtonClick() {
+        isMoving = false;
+        return false;
+    }
+
+    @Override
     public void onLocationChanged(Location location) {
         //move map camera
         mLastLocation = location;
@@ -514,21 +629,21 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
 
         if (isMarkerFollow) {
-            LatLng myLocLatLon = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
-            if (followCache != null) {
-                LatLng destinationCoord = new LatLng(followCache.getLat(), followCache.getLon());
-                viewDistance.setText("Vzdálenost: " + Utils.CalculationByDistance(myLocLatLon, destinationCoord) + " km");
+            if (!isShortestWayEnabled) {
+                if(!isTraceClicked) {
+                    LatLng myLocLatLon = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
+                    if (followCache != null) {
+                        LatLng destinationCoord = new LatLng(followCache.getLat(), followCache.getLon());
+                        viewDistance.setText("Vzdálenost: " + Utils.CalculationByDistance(myLocLatLon, destinationCoord) + " km");
+                    }
+                    if (followWpt != null) {
+                        LatLng destinationCoord = new LatLng(followWpt.getLat(), followWpt.getLon());
+                        viewDistance.setText("Vzdálenost: " + Utils.CalculationByDistance(myLocLatLon, destinationCoord) + " km");
+                    }
+                }
             }
-            if (followWpt != null) {
-                LatLng destinationCoord = new LatLng(followWpt.getLat(), followWpt.getLon());
-                viewDistance.setText("Vzdálenost: " + Utils.CalculationByDistance(myLocLatLon, destinationCoord) + " km");
-            }
-
-
         }
     }
-
-    public static final int MY_PERMISSIONS_REQUEST_LOCATION = 99;
 
     public boolean checkLocationPermission() {
         Log.i(TAG, "checkLocationPermission");
@@ -666,7 +781,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         input.setTextColor(getResources().getColor(R.color.colorWhite));
         input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
         FrameLayout container = new FrameLayout(this);
-        FrameLayout.LayoutParams params = new  FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         params.leftMargin = 40;
         params.rightMargin = 40;
         input.setLayoutParams(params);
@@ -676,17 +791,15 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             public void onClick(DialogInterface dialog, int whichButton) {
                 String location = input.getText().toString();
                 Geocoder geoCoder = new Geocoder(getApplicationContext(), Locale.getDefault());
-                try
-                {
+                try {
                     List<Address> addresses = geoCoder.getFromLocationName(location, 5);
-                    if (addresses.size() > 0)
-                    {
-                        Double lat = (double) (addresses.get(0).getLatitude());
-                        Double lon = (double) (addresses.get(0).getLongitude());
+                    if (addresses.size() > 0) {
+                        Double lat = (addresses.get(0).getLatitude());
+                        Double lon = (addresses.get(0).getLongitude());
 
                         StringBuilder builder = new StringBuilder();
                         int maxLines = addresses.get(0).getMaxAddressLineIndex();
-                        for (int i=0; i<maxLines; i++) {
+                        for (int i = 0; i < maxLines; i++) {
                             String addressStr = addresses.get(0).getAddressLine(i);
                             builder.append(addressStr);
                             builder.append(" ");
@@ -694,24 +807,21 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
                         String finalAddress = builder.toString();
 
-                        final LatLng user = new LatLng(lat, lon);
+                        final LatLng searchAddress = new LatLng(lat, lon);
                         marker = googleMap.addMarker(new MarkerOptions()
-                                .position(user)
+                                .position(searchAddress)
                                 .title(finalAddress)
                                 .icon(BitmapDescriptorFactory.defaultMarker()));
                         marker.setTag(finalAddress);
                         isMarkerFollow = true;
-                        CameraUpdate loc = CameraUpdateFactory.newLatLngZoom(user, previousZoomLevel);
+                        CameraUpdate loc = CameraUpdateFactory.newLatLngZoom(searchAddress, previousZoomLevel);
                         googleMap.animateCamera(loc);
                         isMoving = true;
                         viewDistance.setVisibility(View.VISIBLE);
                         LatLng myLocLatLon = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
-                        LatLng destinationCoord = user;
-                        viewDistance.setText("Vzdálenost: " + Utils.CalculationByDistance(myLocLatLon, destinationCoord) + " km");
+                        viewDistance.setText("Vzdálenost: " + Utils.CalculationByDistance(myLocLatLon, searchAddress) + " km");
                     }
-                }
-                catch (IOException e)
-                {
+                } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
@@ -906,6 +1016,225 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 .setNegativeButton(android.R.string.no, null).show();
     }
 
+    private void showTraceDialog(final Marker marker){
+        new AlertDialog.Builder(this, R.style.YourAlertDialogTheme)
+                .setTitle("Trasa")
+                .setIcon(R.drawable.ico_geo)
+                .setMessage("Pocet bodu trasy:       " + routePoints.size())
+                .setNegativeButton("Zavřít", new DialogInterface.OnClickListener() {
+
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        Toast.makeText(getApplicationContext(), "Dialog close!", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setPositiveButton("Route", new DialogInterface.OnClickListener() {
+
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        if(routePoints.size() >= 2){
+                            planningShortestRoute(routePoints);
+                            isShortestWayEnabled = false;
+                            isTraceClicked = true;
+                            isTraceCreated = true;
+                            marker.hideInfoWindow();
+                            for(int i = 0; i < markers.size(); i++){
+                                boolean status = false;
+                                for(int j = 0; j < routePoints.size(); j++){
+                                    if(!status){
+                                        status = (markers.get(i).equals(routePoints.get(j)));
+                                    }
+                                }
+                                if(!status)
+                                    markers.get(i).remove();
+                            }
+
+                        } else {
+                            Toast.makeText(getApplicationContext(), "Pro vytvoreni trasy jsou potreba alespon dva mapove body!", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                }).setNeutralButton("Zrusit", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        isShortestWayEnabled = false;
+                        isTraceCreated = false;
+                        routePoints.clear();
+                        recolorMarkers();
+                        viewDistance.setVisibility(View.INVISIBLE);
+                        marker.hideInfoWindow();
+                        Toast.makeText(getApplicationContext(), "Trasa zrusena!", Toast.LENGTH_SHORT).show();
+                    }
+                }).show();
+    }
+
+    private void showMarkerDetailCacheDialog(Cache cacheFromMarker){
+        final Cache cache = cacheFromMarker;
+        LatLng myLocLatLon = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
+        LatLng destinationCoord = new LatLng(cache.getLat(), cache.getLon());
+        //viewDistance.setText("Vzdálenost: " + Utils.CalculationByDistance(myLocLatLon, destinationCoord) + " km");
+
+        String typeCache = cache.getType();
+        String sizeCache = cache.getSize();
+        String helpCache = cache.getHelp();
+        String diffCache;
+        String terrCache;
+        if (typeCache == null) typeCache = "neuvedeno";
+        if (sizeCache == null) sizeCache = "neuvedeno";
+        if (helpCache == null) helpCache = "neuvedeno";
+        if (cache.getDifficulty() == 0.0) diffCache = "neuvedeno";
+        else diffCache = String.valueOf(cache.getDifficulty());
+        if (cache.getTerrain() == 0.0) terrCache = "neuvedeno";
+        else terrCache = String.valueOf(cache.getTerrain());
+
+        AlertDialog dialog = new AlertDialog.Builder(this, R.style.YourAlertDialogTheme)
+                .setTitle(cache.getName())
+                .setIcon(R.drawable.ico_geo)
+                .setMessage("Type:       " + typeCache + "\n"
+                        + "Size:       " + sizeCache + "\n"
+                        + "Terrain:    " + terrCache + "\n"
+                        + "Difficulty: " + diffCache + "\n"
+                        + "Distance:   " + Utils.CalculationByDistance(myLocLatLon, destinationCoord) + " km\n"
+                        + "Help:       " + helpCache
+                )
+                .setPositiveButton("Zavřít", new DialogInterface.OnClickListener() {
+
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        Toast.makeText(getApplicationContext(), "Hodne stesti!", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setNegativeButton("Detail", new DialogInterface.OnClickListener() {
+
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        Toast.makeText(getApplicationContext(), "Click Detail!", Toast.LENGTH_SHORT).show();
+                        Intent intent = new Intent(getApplicationContext(), SelectDetailCacheActivity.class);
+                        intent.putExtra("id", cache.getId());
+                        if(isTraceCreated) {
+                            intent.putExtra("requestCode", 11);
+                            startActivityForResult(intent, 11);
+                        }else {
+                            intent.putExtra("requestCode", 10);
+                            startActivityForResult(intent, 10);
+                        }
+                    }
+                }).setNeutralButton("Navigovat", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        try {
+                            SensorManager mSensorManager = (SensorManager) getApplicationContext().getSystemService(SENSOR_SERVICE);
+                            if (mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD) != null && mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) != null) {
+                                Intent intent = new Intent(getApplicationContext(), PointToPointActivity.class);
+                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                intent.putExtra("lat", cache.getLat());
+                                intent.putExtra("long", cache.getLon());
+                                getApplicationContext().startActivity(intent);
+                            } else {
+                                Log.e(TAG, "Device doesn't support sensors for this feature!");
+                                Toast.makeText(getApplicationContext(), "Device doesn't support sensors for this feature!", Toast.LENGTH_LONG).show();
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+
+                    }
+                }).show();
+
+        TextView textView = (TextView) dialog.findViewById(android.R.id.message);
+        if (textView != null) textView.setTypeface(Typeface.MONOSPACE);
+    }
+
+    private void showMarkerDetailWaypointDialog(Waypoint waypointFromMarker){
+        final Waypoint wpt = waypointFromMarker;
+        LatLng myLocLatLon = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
+        LatLng destinationCoord = new LatLng(wpt.getLat(), wpt.getLon());
+        viewDistance.setText("Vzdálenost: " + Utils.CalculationByDistance(myLocLatLon, destinationCoord) + " km");
+
+        String cmtWpt = wpt.getCmt();
+        String nameWpt = wpt.getName();
+        String symWpt = wpt.getSym();
+
+        if (cmtWpt == null) cmtWpt = "neuvedeno";
+        if (nameWpt == null) nameWpt = "neuvedeno";
+        if (symWpt == null) symWpt = "neuvedeno";
+
+        Drawable myDrawable;
+        if (wpt.getType().contains("Parking")) {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+                myDrawable = getResources().getDrawable(R.drawable.ico_parking, getTheme());
+            } else {
+                myDrawable = getResources().getDrawable(R.drawable.ico_parking);
+            }
+        } else {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+                myDrawable = getResources().getDrawable(R.drawable.ico_wpt, getTheme());
+            } else {
+                myDrawable = getResources().getDrawable(R.drawable.ico_wpt);
+            }
+        }
+        String cacheName;
+        if (wpt.getId_cache() > -1) {
+            Caches_DB cache_db = new Caches_DB(getApplicationContext());
+            Cache cache = cache_db.getCache(wpt.getId_cache());
+            cacheName = cache.getName();
+            cache_db.close();
+        } else {
+            cacheName = "nesparovano";
+        }
+
+
+        AlertDialog dialog = new AlertDialog.Builder(this, R.style.YourAlertDialogTheme)
+                .setTitle(wpt.getDesc())
+                .setIcon(myDrawable)
+                .setMessage("Type: " + "Waypoint" + "\n"
+                        + "Sym:  " + symWpt + "\n"
+                        + "Code: " + nameWpt + "\n"
+                        + "Cmt:  " + cmtWpt + "\n"
+                        + "Distance:   " + Utils.CalculationByDistance(myLocLatLon, destinationCoord) + " km\n"
+                        + "Cache: " + cacheName
+                )
+                .setPositiveButton("Zavřít", new DialogInterface.OnClickListener() {
+
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        Toast.makeText(getApplicationContext(), "Hodne stesti!", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setNegativeButton("Detail", new DialogInterface.OnClickListener() {
+
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        Toast.makeText(getApplicationContext(), "Click Detail!", Toast.LENGTH_SHORT).show();
+                        Intent intent = new Intent(getApplicationContext(), DetailWptActivity.class);
+                        intent.putExtra("id", wpt.getId());
+                        if(isTraceCreated) {
+                            intent.putExtra("requestCode", 11);
+                            startActivityForResult(intent, 11);
+                        }else {
+                            intent.putExtra("requestCode", 10);
+                            startActivityForResult(intent, 10);
+                        }
+                    }
+                }).setNeutralButton("Navigovat", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        try {
+                            SensorManager mSensorManager = (SensorManager) getApplicationContext().getSystemService(SENSOR_SERVICE);
+                            if (mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD) != null && mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) != null) {
+                                Intent intent = new Intent(getApplicationContext(), PointToPointActivity.class);
+                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                intent.putExtra("lat", wpt.getLat());
+                                intent.putExtra("long", wpt.getLon());
+                                getApplicationContext().startActivity(intent);
+                            } else {
+                                Log.e(TAG, "Device doesn't support sensors for this feature!");
+                                Toast.makeText(getApplicationContext(), "Device doesn't support sensors for this feature!", Toast.LENGTH_LONG).show();
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+
+                    }
+                }).show();
+
+        TextView textView = (TextView) dialog.findViewById(android.R.id.message);
+        if (textView != null) textView.setTypeface(Typeface.MONOSPACE);
+    }
+
     private void isEnableGPS() {
         Log.i(TAG, "isEnableGPS_check");
         LocationManager manager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
@@ -931,43 +1260,21 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         else
             markers = new ArrayList<>();
         googleMap.clear();
-        LatLng destinationCoordCache = new LatLng(cache.getLat(), cache.getLon());
-        MarkerOptions markerOptions = new MarkerOptions();
-        markerOptions.position(destinationCoordCache);
-        markerOptions.title(cache.getName());
-        markerOptions.zIndex(1.0f);
-        markerOptions.snippet("Click for more info!");
-        markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.marker_select_orange));
-        viewDistance.setVisibility(View.VISIBLE);
-        marker = googleMap.addMarker(markerOptions);
-        marker.setTag(cache);
-
+        createCacheMarker(cache);
         for (int i = 0; i < wpts.size(); i++) {
-            LatLng destCoord = new LatLng(wpts.get(i).getLat(), wpts.get(i).getLon());
-            MarkerOptions mOptions = new MarkerOptions();
-            mOptions.position(destCoord);
-            mOptions.title(wpts.get(i).getDesc());
-            mOptions.zIndex(0.5f);
-            mOptions.snippet("Click for more info!");
-            if (wpts.get(i).getSym().contains("Parking")) {
-                mOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.marker_parking_blue));
-            } else {
-                if (wpts.get(i).getId_list() == LIST_NALEZENE) {
-                    mOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.marker_wpt_green));
-                } else {
-                    mOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.marker_wpt_grey));
-                }
-
-            }
-            marker = googleMap.addMarker(mOptions);
-            marker.setTag(wpts.get(i));
-            markers.add(marker);
+            createWptMarker(wpts.get(i));
         }
 
         followCache = cache;
         isMarkerFollow = true;
-        CameraUpdate loc = CameraUpdateFactory.newLatLngZoom(destinationCoordCache, previousZoomLevel);
+        viewDistance.setVisibility(View.VISIBLE);
+        LatLng myLocLatLon = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
+        LatLng destinationCoord = new LatLng(followCache.getLat(), followCache.getLon());
+        viewDistance.setText("Vzdálenost: " + Utils.CalculationByDistance(myLocLatLon, destinationCoord) + " km");
+        CameraUpdate loc = CameraUpdateFactory.newLatLngZoom(destinationCoord, previousZoomLevel);
         googleMap.animateCamera(loc);
+
+        planningShortestRoute(markers);
         try {
             if (isGeofencingEnabled) {
                 if (mGoogleApiClient.isConnected())
@@ -988,6 +1295,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         googleMap.clear();
         viewDistance.setVisibility(View.INVISIBLE);
         isMarkerFollow = false;
+        isTraceCreated = false;
         if (markers == null) {
             markers = new ArrayList<>();
         } else {
@@ -995,256 +1303,83 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
 
         for (int i = 0; i < caches.size(); i++) {
-            LatLng destinationCoord = new LatLng(caches.get(i).getLat(), caches.get(i).getLon());
-            MarkerOptions markerOptions = new MarkerOptions();
-            markerOptions.position(destinationCoord);
-            markerOptions.zIndex(1.0f);
-            markerOptions.title(caches.get(i).getName());
-            markerOptions.snippet("Click for more info!");
-            if (caches.get(i).getId_list() == LIST_NALEZENE) {
-                markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.marker_success_green));
-            } else {
-                if (caches.get(i).getType().contains("Traditional")) {
-                    markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.marker_cache_traditional));
-                } else if (caches.get(i).getType().contains("Multi")) {
-                    markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.marker_cache_multi));
-                } else if (caches.get(i).getType().contains("Unknown")) {
-                    markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.marker_cache_mystery));
-                } else {
-                    markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.marker_cache_default));
-                }
-            }
-            marker = googleMap.addMarker(markerOptions);
-            marker.setTag(caches.get(i));
-            markers.add(marker);
+            createCacheMarker(caches.get(i));
         }
         if (isShowWptsEnabled) {
-            if(filterFind == FILTER_ALL) {
+            if (filterFind == FILTER_ALL) {
                 for (int i = 0; i < wpts.size(); i++) {
-                    LatLng destinationCoord = new LatLng(wpts.get(i).getLat(), wpts.get(i).getLon());
-                    MarkerOptions markerOptions = new MarkerOptions();
-                    markerOptions.position(destinationCoord);
-                    markerOptions.zIndex(0.5f);
-                    markerOptions.title(wpts.get(i).getDesc());
-                    markerOptions.snippet("Click for more info!");
-                    if (wpts.get(i).getSym().contains("Parking")) {
-                        markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.marker_parking_blue));
-                    } else {
-                        if (wpts.get(i).getId_list() == LIST_NALEZENE) {
-                            markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.marker_wpt_green));
-                        } else {
-                            markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.marker_wpt_grey));
-                        }
-
-                    }
-                    marker = googleMap.addMarker(markerOptions);
-                    marker.setTag(wpts.get(i));
-                    markers.add(marker);
+                    createWptMarker(wpts.get(i));
                 }
+            }
+        }
+    }
+
+    private void findWpts(int filterFind){
+        Log.i(TAG, "findWptsFilter");
+        Context ctx = getApplicationContext();
+        Caches_DB caches_db = new Caches_DB(ctx);
+        isTraceCreated = false;
+        ArrayList<Waypoint> wpts = caches_db.getWptsFilter(filterFind);
+        caches_db.close();
+        if (isShowWptsEnabled) {
+            if (filterFind == FILTER_ALL) {
+                for (int i = 0; i < wpts.size(); i++) {
+                    createWptMarker(wpts.get(i));
+                }
+            }
+        } else {
+            for(int i = 0; i < markers.size(); i++){
+                if(markers.get(i).getTag() instanceof  Waypoint){
+                    markers.get(i).remove();
+                }
+            }
+        }
+    }
+
+    private void createCacheMarker(Cache cache){
+        LatLng destinationCoord = new LatLng(cache.getLat(), cache.getLon());
+        MarkerOptions markerOptions = new MarkerOptions();
+        markerOptions.position(destinationCoord);
+        markerOptions.zIndex(1.0f);
+        markerOptions.title(cache.getName());
+        markerOptions.snippet("Click for more info!");
+        if (cache.getId_list() == LIST_NALEZENE) {
+            markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.marker_success_green));
+        } else {
+            if (cache.getType().contains("Traditional")) {
+                markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.marker_cache_traditional));
+            } else if (cache.getType().contains("Multi")) {
+                markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.marker_cache_multi));
+            } else if (cache.getType().contains("Unknown")) {
+                markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.marker_cache_mystery));
             } else {
-
+                markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.marker_cache_default));
             }
         }
+        marker = googleMap.addMarker(markerOptions);
+        marker.setTag(cache);
+        markers.add(marker);
     }
 
-    @Override
-    public void onCameraMove() {
-        CameraPosition cameraPosition = googleMap.getCameraPosition();
-        if (previousZoomLevel != cameraPosition.zoom) {
-            isZooming = true;
-            previousZoomLevel = cameraPosition.zoom;
-        }
-    }
-
-    @Override
-    public void onCameraMoveStarted(int reason) {
-
-        if (reason == GoogleMap.OnCameraMoveStartedListener.REASON_GESTURE) {
-            CameraPosition cameraPosition = googleMap.getCameraPosition();
-            if (previousZoomLevel != cameraPosition.zoom) {
-                isZooming = true;
-                previousZoomLevel = cameraPosition.zoom;
+    private void createWptMarker(Waypoint wpt){
+        LatLng destinationCoord = new LatLng(wpt.getLat(), wpt.getLon());
+        MarkerOptions markerOptions = new MarkerOptions();
+        markerOptions.position(destinationCoord);
+        markerOptions.zIndex(0.5f);
+        markerOptions.title(wpt.getDesc());
+        markerOptions.snippet("Click for more info!");
+        if (wpt.getSym().contains("Parking")) {
+            markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.marker_parking_blue));
+        } else {
+            if (wpt.getId_list() == LIST_NALEZENE) {
+                markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.marker_wpt_green));
+            } else {
+                markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.marker_wpt_grey));
             }
-            isMoving = true;
-            //Toast.makeText(this, "The user gestured on the map. = MOVE", Toast.LENGTH_SHORT).show();
         }
-        /*
-        else if (reason == GoogleMap.OnCameraMoveStartedListener.REASON_API_ANIMATION) {
-            //Toast.makeText(this, "The user tapped something on the map. = CLICK BUTTON",Toast.LENGTH_SHORT).show();
-        } else if (reason == GoogleMap.OnCameraMoveStartedListener.REASON_DEVELOPER_ANIMATION) {
-            //Toast.makeText(this, "The app moved the camera.", Toast.LENGTH_SHORT).show();
-        }
-        */
-    }
-
-    @Override
-    public boolean onMyLocationButtonClick() {
-        isMoving = false;
-        return false;
-    }
-
-    @Override
-    public void onInfoWindowClick(Marker marker) {
-        try {
-            if (marker.getTag() instanceof Cache) {
-                final Cache cache = (Cache) marker.getTag();
-                System.out.println("MARKER CACHE: " + cache.getName());
-                LatLng myLocLatLon = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
-                LatLng destinationCoord = new LatLng(cache.getLat(), cache.getLon());
-                viewDistance.setText("Vzdálenost: " + Utils.CalculationByDistance(myLocLatLon, destinationCoord) + " km");
-
-                String typeCache = cache.getType();
-                String sizeCache = cache.getSize();
-                String helpCache = cache.getHelp();
-                String diffCache;
-                String terrCache;
-                if (typeCache == null) typeCache = "neuvedeno";
-                if (sizeCache == null) sizeCache = "neuvedeno";
-                if (helpCache == null) helpCache = "neuvedeno";
-                if (cache.getDifficulty() == 0.0) diffCache = "neuvedeno";
-                else diffCache = String.valueOf(cache.getDifficulty());
-                if (cache.getTerrain() == 0.0) terrCache = "neuvedeno";
-                else terrCache = String.valueOf(cache.getTerrain());
-
-                AlertDialog dialog = new AlertDialog.Builder(this, R.style.YourAlertDialogTheme)
-                        .setTitle(cache.getName())
-                        .setIcon(R.drawable.ico_geo)
-                        .setMessage("Type:       " + typeCache + "\n"
-                                + "Size:       " + sizeCache + "\n"
-                                + "Terrain:    " + terrCache + "\n"
-                                + "Difficulty: " + diffCache + "\n"
-                                + "Distance:   " + Utils.CalculationByDistance(myLocLatLon, destinationCoord) + " km\n"
-                                + "Help:       " + helpCache
-                        )
-                        .setPositiveButton("Zavřít", new DialogInterface.OnClickListener() {
-
-                            public void onClick(DialogInterface dialog, int whichButton) {
-                                Toast.makeText(getApplicationContext(), "Hodne stesti!", Toast.LENGTH_SHORT).show();
-                            }
-                        })
-                        .setNegativeButton("Detail", new DialogInterface.OnClickListener() {
-
-                            public void onClick(DialogInterface dialog, int whichButton) {
-                                Toast.makeText(getApplicationContext(), "Click Detail!", Toast.LENGTH_SHORT).show();
-                                Intent intent = new Intent(getApplicationContext(), SelectDetailCacheActivity.class);
-                                intent.putExtra("id", cache.getId());
-                                startActivityForResult(intent, 10);
-                            }
-                        }).setNeutralButton("Navigovat", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                try {
-                                    SensorManager mSensorManager = (SensorManager) getApplicationContext().getSystemService(SENSOR_SERVICE);
-                                    if (mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD) != null && mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) != null) {
-                                        Intent intent = new Intent(getApplicationContext(), PointToPointActivity.class);
-                                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                                        intent.putExtra("lat", cache.getLat());
-                                        intent.putExtra("long", cache.getLon());
-                                        getApplicationContext().startActivity(intent);
-                                    } else {
-                                        Log.e(TAG, "Device doesn't support sensors for this feature!");
-                                        Toast.makeText(getApplicationContext(), "Device doesn't support sensors for this feature!", Toast.LENGTH_LONG).show();
-                                    }
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-
-                            }
-                        }).show();
-
-                TextView textView = (TextView) dialog.findViewById(android.R.id.message);
-                if (textView != null) textView.setTypeface(Typeface.MONOSPACE);
-            } else if(marker.getTag() instanceof  Waypoint) {
-                final Waypoint wpt = (Waypoint) marker.getTag();
-                LatLng myLocLatLon = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
-                LatLng destinationCoord = new LatLng(wpt.getLat(), wpt.getLon());
-                viewDistance.setText("Vzdálenost: " + Utils.CalculationByDistance(myLocLatLon, destinationCoord) + " km");
-
-                String cmtWpt = wpt.getCmt();
-                String nameWpt = wpt.getName();
-                String symWpt = wpt.getSym();
-
-                if (cmtWpt == null) cmtWpt = "neuvedeno";
-                if (nameWpt == null) nameWpt = "neuvedeno";
-                if (symWpt == null) symWpt = "neuvedeno";
-
-                Drawable myDrawable;
-                if (wpt.getType().contains("Parking")) {
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
-                        myDrawable = getResources().getDrawable(R.drawable.ico_parking, getTheme());
-                    } else {
-                        myDrawable = getResources().getDrawable(R.drawable.ico_parking);
-                    }
-                } else {
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
-                        myDrawable = getResources().getDrawable(R.drawable.ico_wpt, getTheme());
-                    } else {
-                        myDrawable = getResources().getDrawable(R.drawable.ico_wpt);
-                    }
-                }
-                String cacheName;
-                if (wpt.getId_cache() > -1) {
-                    Caches_DB cache_db = new Caches_DB(getApplicationContext());
-                    Cache cache = cache_db.getCache(wpt.getId_cache());
-                    cacheName = cache.getName();
-                    cache_db.close();
-                } else {
-                    cacheName = "nesparovano";
-                }
-
-
-                AlertDialog dialog = new AlertDialog.Builder(this, R.style.YourAlertDialogTheme)
-                        .setTitle(wpt.getDesc())
-                        .setIcon(myDrawable)
-                        .setMessage("Type: " + "Waypoint" + "\n"
-                                + "Sym:  " + symWpt + "\n"
-                                + "Code: " + nameWpt + "\n"
-                                + "Cmt:  " + cmtWpt + "\n"
-                                + "Distance:   " + Utils.CalculationByDistance(myLocLatLon, destinationCoord) + " km\n"
-                                + "Cache: " + cacheName
-                        )
-                        .setPositiveButton("Zavřít", new DialogInterface.OnClickListener() {
-
-                            public void onClick(DialogInterface dialog, int whichButton) {
-                                Toast.makeText(getApplicationContext(), "Hodne stesti!", Toast.LENGTH_SHORT).show();
-                            }
-                        })
-                        .setNegativeButton("Detail", new DialogInterface.OnClickListener() {
-
-                            public void onClick(DialogInterface dialog, int whichButton) {
-                                Toast.makeText(getApplicationContext(), "Click Detail!", Toast.LENGTH_SHORT).show();
-                                Intent intent = new Intent(getApplicationContext(), DetailWptActivity.class);
-                                intent.putExtra("id", wpt.getId());
-                                startActivityForResult(intent, 10);
-                            }
-                        }).setNeutralButton("Navigovat", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                try {
-                                    SensorManager mSensorManager = (SensorManager) getApplicationContext().getSystemService(SENSOR_SERVICE);
-                                    if (mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD) != null && mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) != null) {
-                                        Intent intent = new Intent(getApplicationContext(), PointToPointActivity.class);
-                                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                                        intent.putExtra("lat", wpt.getLat());
-                                        intent.putExtra("long", wpt.getLon());
-                                        getApplicationContext().startActivity(intent);
-                                    } else {
-                                        Log.e(TAG, "Device doesn't support sensors for this feature!");
-                                        Toast.makeText(getApplicationContext(), "Device doesn't support sensors for this feature!", Toast.LENGTH_LONG).show();
-                                    }
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-
-                            }
-                        }).show();
-
-                TextView textView = (TextView) dialog.findViewById(android.R.id.message);
-                if (textView != null) textView.setTypeface(Typeface.MONOSPACE);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        marker = googleMap.addMarker(markerOptions);
+        marker.setTag(wpt);
+        markers.add(marker);
     }
 
     @Override
@@ -1253,36 +1388,67 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         try {
             isMoving = true;
             isMarkerFollow = true;
-            this.marker = marker;
-            if (markers != null) recolorMarkers();
-            viewDistance.setVisibility(View.VISIBLE);
 
-            if (marker.getTag() instanceof Cache) {
-                this.marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_select_orange));
-                followCache = (Cache) marker.getTag();
-                followWpt = null;
-                LatLng myLocLatLon = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
-                LatLng destinationCoord = new LatLng(followCache.getLat(), followCache.getLon());
-                viewDistance.setText("Vzdálenost: " + Utils.CalculationByDistance(myLocLatLon, destinationCoord) + " km");
-            } else if(marker.getTag() instanceof Waypoint) {
-                followWpt = (Waypoint) marker.getTag();
-                followCache = null;
-                if (followWpt.getSym().contains("Parking")) {
-                    this.marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_parking_blue));
+            if (isShortestWayEnabled) {
+                Log.i(TAG, "isShortestWayEnabled");
+                marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_select_orange));
+                marker.setSnippet("Click for ROUTE options!");
+                if (routePoints.contains(marker)) {
+                    Log.i(TAG, "routePoints remove");
+                    routePoints.remove(marker);
+                    recolorMarker(marker);
+                    viewDistance.setVisibility(View.VISIBLE);
+                    String desc = "Seznam bodu trasy: \n";
+                    for (int i = 0; i < routePoints.size(); i++) {
+                        desc = desc + routePoints.get(i).getTitle() + " \n";
+                    }
+                    viewDistance.setText(desc);
                 } else {
-                    this.marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_wpt_orange));
+                    Log.i(TAG, "routePoints add");
+                    routePoints.add(marker);
+                    viewDistance.setVisibility(View.VISIBLE);
+                    String desc = "Seznam bodu trasy: \n";
+                    for (int i = 0; i < routePoints.size(); i++) {
+                        desc = desc + routePoints.get(i).getTitle() + " \n";
+                    }
+                    viewDistance.setText(desc);
                 }
-                LatLng myLocLatLon = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
-                LatLng destinationCoord = new LatLng(followWpt.getLat(), followWpt.getLon());
-                viewDistance.setText("Vzdálenost: " + Utils.CalculationByDistance(myLocLatLon, destinationCoord) + " km");
-            } else {
-                LatLng myLocLatLon = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
-                LatLng destinationCoord = marker.getPosition();
-                viewDistance.setText("Vzdálenost: " + Utils.CalculationByDistance(myLocLatLon, destinationCoord) + " km");
-            }
 
-            if (isGeofencingEnabled) {
-                startGeofence();
+
+            } else {
+                Log.i(TAG, "shortestWayDisabled");
+                this.marker = marker;
+                isTraceClicked = false;
+                if (markers != null) recolorMarkers();
+                viewDistance.setVisibility(View.VISIBLE);
+
+                if (marker.getTag() instanceof Cache) {
+                    this.marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_select_orange));
+                    followCache = (Cache) marker.getTag();
+                    followWpt = null;
+                    LatLng myLocLatLon = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
+                    LatLng destinationCoord = new LatLng(followCache.getLat(), followCache.getLon());
+                    viewDistance.setText("Vzdálenost: " + Utils.CalculationByDistance(myLocLatLon, destinationCoord) + " km");
+                } else if (marker.getTag() instanceof Waypoint) {
+                    followWpt = (Waypoint) marker.getTag();
+                    followCache = null;
+                    if (followWpt.getSym().contains("Parking")) {
+                        this.marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_parking_blue));
+                    } else {
+                        this.marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_wpt_orange));
+                    }
+                    LatLng myLocLatLon = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
+                    LatLng destinationCoord = new LatLng(followWpt.getLat(), followWpt.getLon());
+                    viewDistance.setText("Vzdálenost: " + Utils.CalculationByDistance(myLocLatLon, destinationCoord) + " km");
+                } else {
+                    LatLng myLocLatLon = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
+                    LatLng destinationCoord = marker.getPosition();
+                    viewDistance.setText("Vzdálenost: " + Utils.CalculationByDistance(myLocLatLon, destinationCoord) + " km");
+                }
+
+                if (isGeofencingEnabled) {
+                    startGeofence();
+                }
             }
 
         } catch (Exception e) {
@@ -1291,37 +1457,167 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         return false;
     }
 
+    @Override
+    public void onInfoWindowClick(Marker marker) {
+        try {
+            if (isShortestWayEnabled) {
+                showTraceDialog(marker);
+            } else {
+                if (marker.getTag() instanceof Cache) {
+                    Cache cache = (Cache) marker.getTag();
+                    showMarkerDetailCacheDialog(cache);
+
+                } else if (marker.getTag() instanceof Waypoint) {
+                    Waypoint wpt = (Waypoint) marker.getTag();
+                    showMarkerDetailWaypointDialog(wpt);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void planningShortestRoute(ArrayList<Marker> routePoints) {
+        Log.i(TAG, "planningShortestRoute");
+        //TODO get distances matrix
+        int matrixSize = routePoints.size();
+        double[][] matrix = new double[matrixSize][matrixSize];
+        for (int i = 0; i < matrixSize; i++) {
+            for (int j = 0; j < matrixSize; j++) {
+                matrix[i][j] = Utils.CalculationByDistance(routePoints.get(i).getPosition(), routePoints.get(j).getPosition());
+            }
+        }
+
+        //TODO display matrix and routePoints
+        for (int i = 0; i < matrixSize; i++) {
+            for (int j = 0; j < matrixSize; j++) {
+                System.out.print("\t" + matrix[i][j]);
+            }
+            System.out.println();
+        }
+        System.out.println("///////////////////////////////");
+        for (int i = 0; i < routePoints.size(); i++) {
+            System.out.println(routePoints.get(i).getTitle());
+        }
+        System.out.println("///////////////////////////////");
+
+
+        //TODO PLANNING ROUTE
+        ArrayList<Marker> shortestRoutePoints = new ArrayList<>();
+        totalDistance = 0;
+        try {
+            shortestRoutePoints.add(routePoints.get(0));
+            pomIndex = 0;
+            while (shortestRoutePoints.size() != routePoints.size()) {
+                double min = 0;
+                int pomJ;
+                int i = pomIndex;
+                for (int j = 0; j < matrixSize; j++) {
+                    pomJ = 0;
+                    while (min == 0) {
+                        if (!shortestRoutePoints.contains(routePoints.get(pomJ))) {
+                            min = matrix[i][pomJ];
+                            pomIndex = pomJ;
+                        }
+                        if (min == 0)
+                            pomJ += 1;
+                    }
+                    if (matrix[i][j] <= min && matrix[pomIndex][j] != 0) {
+                        if (!shortestRoutePoints.contains(routePoints.get(j))) {
+                            min = matrix[i][j];
+                            pomIndex = j;
+                        }
+                    }
+                }
+                totalDistance += min;
+                shortestRoutePoints.add(routePoints.get(pomIndex));
+            }
+
+            //TODO display shortest Route Points
+            for (int i = 0; i < shortestRoutePoints.size(); i++) {
+                System.out.println(shortestRoutePoints.get(i).getTitle());
+            }
+            viewDistance.setText("Celková vzdálenost: " + String.format( "%.3f", totalDistance ) + " km");
+
+
+            //TODO drawLine points between shortest Route Points
+            if (polylines==null) {
+                polylines = new ArrayList<>();
+            } else {
+                for(Polyline line : polylines)
+                {
+                    line.remove();
+                }
+            }
+            for (int i = 0; i < shortestRoutePoints.size() - 1; i++) {
+                drawLine(shortestRoutePoints.get(i).getPosition(), shortestRoutePoints.get(i+1).getPosition());
+            }
+            for (int i = 0; i < markers.size(); i++) {
+                markers.get(i).setSnippet("Klikni pro více detailů!");
+            }
+            recolorMarkers();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    public void drawLine(LatLng startLocation, LatLng endLocation) {
+        PolylineOptions polylineOptions = new PolylineOptions();
+        polylineOptions
+                .add(startLocation)
+                .add(endLocation)
+                .color(R.color.colorAccent)
+                .zIndex(0.49f)
+                .clickable(true)
+                .visible(true);
+        Polyline polyline = googleMap.addPolyline(polylineOptions);
+        polylines.add(polyline);
+        googleMap.setOnPolylineClickListener(new GoogleMap.OnPolylineClickListener() {
+            @Override
+            public void onPolylineClick(Polyline polyline) {
+                viewDistance.setText("Celková vzdálenost: " + String.format( "%.3f", totalDistance ) + " km");
+                isTraceClicked = true;
+            }
+        });
+    }
+
+    private void recolorMarker(Marker marker) {
+        if (marker.getTag() instanceof Cache) {
+            Cache cache = (Cache) marker.getTag();
+            if (cache.getId_list() == LIST_NALEZENE) {
+                marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_success_green));
+            } else {
+                if (cache.getType().contains("Traditional")) {
+                    marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_cache_traditional));
+                } else if (cache.getType().contains("Multi")) {
+                    marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_cache_multi));
+                } else if (cache.getType().contains("Unknown")) {
+                    marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_cache_mystery));
+                } else {
+                    marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_cache_default));
+                }
+            }
+        } else if ((marker.getTag() instanceof Waypoint)) {
+            Waypoint wpt = (Waypoint) marker.getTag();
+            if (wpt.getSym().contains("Parking")) {
+                marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_parking_blue));
+            } else {
+                if (wpt.getId_list() == LIST_NALEZENE) {
+                    marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_wpt_green));
+                } else {
+                    marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_wpt_grey));
+                }
+
+            }
+        }
+    }
+
     private void recolorMarkers() {
         for (int i = 0; i < markers.size(); i++) {
             Marker marker = markers.get(i);
-            if (marker.getTag() instanceof Cache) {
-                Cache cache = (Cache) marker.getTag();
-                if (cache.getId_list() == LIST_NALEZENE) {
-                    marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_success_green));
-                } else {
-                    if (cache.getType().contains("Traditional")) {
-                        marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_cache_traditional));
-                    } else if (cache.getType().contains("Multi")) {
-                        marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_cache_multi));
-                    } else if (cache.getType().contains("Unknown")) {
-                        marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_cache_mystery));
-                    } else {
-                        marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_cache_default));
-                    }
-                }
-            } else {
-                Waypoint wpt = (Waypoint) marker.getTag();
-                if (wpt.getSym().contains("Parking")) {
-                    marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_parking_blue));
-                } else {
-                    if (wpt.getId_list() == LIST_NALEZENE) {
-                        marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_wpt_green));
-                    } else {
-                        marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_wpt_grey));
-                    }
-
-                }
-            }
+            recolorMarker(marker);
         }
     }
 
@@ -1336,7 +1632,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER
                             | Geofence.GEOFENCE_TRANSITION_EXIT)
                     .build();
-        } else if(marker.getTag() instanceof  Waypoint) {
+        } else if (marker.getTag() instanceof Waypoint) {
             Waypoint wpt = (Waypoint) marker.getTag();
             return new Geofence.Builder()
                     .setRequestId("Waypoint " + wpt.getName())
