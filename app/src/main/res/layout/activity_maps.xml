@@ -22,9 +22,9 @@
         android:id="@+id/textViewMapDistance"
         android:textColor="@color/colorWhite"
         android:background="#70000000"
-        android:layout_marginLeft="60dp"
+        android:layout_marginLeft="10dp"
         android:padding="5dp"
         android:layout_gravity="top|left"
-        android:layout_marginTop="16dp" />
+        android:layout_marginTop="12dp" />
 
 </FrameLayout>
