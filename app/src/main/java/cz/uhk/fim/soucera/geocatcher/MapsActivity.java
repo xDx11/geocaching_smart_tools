@@ -940,7 +940,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         MarkerOptions markerOptions = new MarkerOptions();
         markerOptions.position(destinationCoordCache);
         markerOptions.title(cache.getName());
-        markerOptions.zIndex(1.0f);
+        markerOptions.zIndex(0.51f);
         markerOptions.snippet("Click for more info!");
         markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.marker_select_orange));
         viewDistance.setVisibility(View.VISIBLE);
@@ -973,6 +973,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         isMarkerFollow = true;
         CameraUpdate loc = CameraUpdateFactory.newLatLngZoom(destinationCoordCache, previousZoomLevel);
         googleMap.animateCamera(loc);
+        planningShortestRoute(markers);
         try {
             if (isGeofencingEnabled) {
                 if (mGoogleApiClient.isConnected())
@@ -1105,87 +1106,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         .setPositiveButton("Route", new DialogInterface.OnClickListener() {
 
                             public void onClick(DialogInterface dialog, int whichButton) {
-
-                                //TODO get distances matrix
-                                int matrixSize = routePoints.size();
-                                double[][] matrix = new double[matrixSize][matrixSize];
-                                for (int i = 0; i < matrixSize; i++) {
-                                    for (int j = 0; j < matrixSize; j++) {
-                                        matrix[i][j] = Utils.CalculationByDistance(routePoints.get(i).getPosition(), routePoints.get(j).getPosition());
-                                    }
-                                }
-
-                                //TODO display matrix
-                                for (int i = 0; i < matrixSize; i++) {
-                                    for (int j = 0; j < matrixSize; j++) {
-                                        System.out.print("\t" + matrix[i][j]);
-                                    }
-                                    System.out.println();
-                                }
-                                System.out.println("///////////////////////////////");
-                                for (int i = 0; i < routePoints.size(); i++) {
-                                    System.out.println(routePoints.get(i).getTitle());
-                                }
-                                System.out.println("///////////////////////////////");
-
-
-                                //TODO PLANNING ROUTE
-                                ArrayList<Marker> shortestRoutePoints = new ArrayList<>();
-                                double totalDistance = 0;
-                                try {
-                                    shortestRoutePoints.add(routePoints.get(0));
-                                    pomIndex = 0;
-
-                                    //double[] totalDistance = new double[matrixSize];
-                                    while (shortestRoutePoints.size() != routePoints.size()) {
-                                        System.out.println("PomIndex START: " + pomIndex);
-                                        System.out.println("Z: " + routePoints.get(pomIndex).getTitle());
-                                        double min = 0;
-                                        System.out.println("-");
-                                        for(int j = 0; j < matrixSize; j++){
-                                            System.out.println(matrix[pomIndex][j]);
-                                        }
-                                        int pomJ = 0;
-                                        int i = pomIndex;
-                                        for (int j = 0; j < matrixSize; j++) {
-                                            pomJ = 0;
-                                            while(min == 0){
-                                                if(!shortestRoutePoints.contains(routePoints.get(pomJ))) {
-                                                    min = matrix[i][pomJ];
-                                                    pomIndex = pomJ;
-                                                    //System.out.println("min first: " + min);
-                                                }
-                                                if(min==0)
-                                                    pomJ += 1;
-                                                //System.out.println("min bool: " + (min==0));
-                                            }
-                                            if (matrix[i][j] <= min && matrix[pomIndex][j] != 0) {
-                                                if(!shortestRoutePoints.contains(routePoints.get(j))){
-                                                    min = matrix[i][j];
-                                                    pomIndex = j;
-                                                }
-                                            }
-                                        }
-                                        System.out.println("-");
-                                        System.out.println("min: " + min);
-                                        System.out.println("PomIndex: " + pomIndex);
-                                        System.out.println("Do: " + routePoints.get(pomIndex).getTitle());
-                                        System.out.println("-/-/-/");
-                                        totalDistance += min;
-                                        shortestRoutePoints.add(routePoints.get(pomIndex));
-                                    }
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-                                System.out.println("TotalDistance: " + totalDistance);
-                                viewDistance.setText("Celkova vzdalenost: " + totalDistance);
-
-
-                                System.out.println("///////////////////////////////");
-                                for (int i = 0; i < shortestRoutePoints.size(); i++) {
-                                    System.out.println(shortestRoutePoints.get(i).getTitle());
-                                }
-
+                                planningShortestRoute(routePoints);
 
                             }
                         }).setNeutralButton("Zrusit", new DialogInterface.OnClickListener() {
@@ -1358,6 +1279,71 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    private void planningShortestRoute(ArrayList<Marker> routePoints){
+        //TODO get distances matrix
+        int matrixSize = routePoints.size();
+        double[][] matrix = new double[matrixSize][matrixSize];
+        for (int i = 0; i < matrixSize; i++) {
+            for (int j = 0; j < matrixSize; j++) {
+                matrix[i][j] = Utils.CalculationByDistance(routePoints.get(i).getPosition(), routePoints.get(j).getPosition());
+            }
+        }
+
+        //TODO display matrix and routePoints
+        for (int i = 0; i < matrixSize; i++) {
+            for (int j = 0; j < matrixSize; j++) {
+                System.out.print("\t" + matrix[i][j]);
+            }
+            System.out.println();
+        }
+        System.out.println("///////////////////////////////");
+        for (int i = 0; i < routePoints.size(); i++) {
+            System.out.println(routePoints.get(i).getTitle());
+        }
+        System.out.println("///////////////////////////////");
+
+
+        //TODO PLANNING ROUTE
+        ArrayList<Marker> shortestRoutePoints = new ArrayList<>();
+        double totalDistance = 0;
+        try {
+            shortestRoutePoints.add(routePoints.get(0));
+            pomIndex = 0;
+            while (shortestRoutePoints.size() != routePoints.size()) {
+                double min = 0;
+                int pomJ;
+                int i = pomIndex;
+                for (int j = 0; j < matrixSize; j++) {
+                    pomJ = 0;
+                    while(min == 0){
+                        if(!shortestRoutePoints.contains(routePoints.get(pomJ))) {
+                            min = matrix[i][pomJ];
+                            pomIndex = pomJ;
+                        }
+                        if(min==0)
+                            pomJ += 1;
+                    }
+                    if (matrix[i][j] <= min && matrix[pomIndex][j] != 0) {
+                        if(!shortestRoutePoints.contains(routePoints.get(j))){
+                            min = matrix[i][j];
+                            pomIndex = j;
+                        }
+                    }
+                }
+                totalDistance += min;
+                shortestRoutePoints.add(routePoints.get(pomIndex));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        viewDistance.setText("Celkova vzdalenost: " + totalDistance);
+
+        //TODO display shortest Route Points
+        for (int i = 0; i < shortestRoutePoints.size(); i++) {
+            System.out.println(shortestRoutePoints.get(i).getTitle());
         }
     }
 
