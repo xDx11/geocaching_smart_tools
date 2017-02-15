@@ -210,11 +210,11 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 System.out.println("RESULT FROM SELECT = RESULT_CANCELED");
             }
         }
-        try{
-            if(requestCode == 11) {
+        try {
+            if (requestCode == 11) {
                 int id = data.getIntExtra("idCache", 0);
                 int idWpt = data.getIntExtra("idWpt", 0);
-                if(id > 0) {
+                if (id > 0) {
                     Caches_DB cachesDB = new Caches_DB(getApplicationContext());
                     Cache cache = cachesDB.getCache(id);
                     cachesDB.close();
@@ -227,7 +227,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         }
                     }
                 }
-                if(idWpt > 0){
+                if (idWpt > 0) {
                     Caches_DB cachesDB = new Caches_DB(getApplicationContext());
                     Waypoint wpt = cachesDB.getWpt(idWpt);
                     cachesDB.close();
@@ -242,7 +242,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 }
                 recolorMarkers();
             }
-        } catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
@@ -501,7 +501,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         googleMap.setBuildingsEnabled(false);
     }
 
-    public void compassPositionLayout(){
+    public void compassPositionLayout() {
         try {
             if (mapFragment != null) {
                 if (mapFragment.getView().findViewById(Integer.parseInt("1")) != null) {
@@ -630,7 +630,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         if (isMarkerFollow) {
             if (!isShortestWayEnabled) {
-                if(!isTraceClicked) {
+                if (!isTraceClicked) {
                     LatLng myLocLatLon = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
                     if (followCache != null) {
                         LatLng destinationCoord = new LatLng(followCache.getLat(), followCache.getLon());
@@ -1016,7 +1016,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 .setNegativeButton(android.R.string.no, null).show();
     }
 
-    private void showTraceDialog(final Marker marker){
+    private void showTraceDialog(final Marker marker) {
         new AlertDialog.Builder(this, R.style.YourAlertDialogTheme)
                 .setTitle("Trasa")
                 .setIcon(R.drawable.ico_geo)
@@ -1030,20 +1030,20 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 .setPositiveButton("Route", new DialogInterface.OnClickListener() {
 
                     public void onClick(DialogInterface dialog, int whichButton) {
-                        if(routePoints.size() >= 2){
+                        if (routePoints.size() >= 2) {
                             planningShortestRoute(routePoints);
                             isShortestWayEnabled = false;
                             isTraceClicked = true;
                             isTraceCreated = true;
                             marker.hideInfoWindow();
-                            for(int i = 0; i < markers.size(); i++){
+                            for (int i = 0; i < markers.size(); i++) {
                                 boolean status = false;
-                                for(int j = 0; j < routePoints.size(); j++){
-                                    if(!status){
+                                for (int j = 0; j < routePoints.size(); j++) {
+                                    if (!status) {
                                         status = (markers.get(i).equals(routePoints.get(j)));
                                     }
                                 }
-                                if(!status)
+                                if (!status)
                                     markers.get(i).remove();
                             }
 
@@ -1052,20 +1052,20 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         }
                     }
                 }).setNeutralButton("Zrusit", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        isShortestWayEnabled = false;
-                        isTraceCreated = false;
-                        routePoints.clear();
-                        recolorMarkers();
-                        viewDistance.setVisibility(View.INVISIBLE);
-                        marker.hideInfoWindow();
-                        Toast.makeText(getApplicationContext(), "Trasa zrusena!", Toast.LENGTH_SHORT).show();
-                    }
-                }).show();
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                isShortestWayEnabled = false;
+                isTraceCreated = false;
+                routePoints.clear();
+                recolorMarkers();
+                viewDistance.setVisibility(View.INVISIBLE);
+                marker.hideInfoWindow();
+                Toast.makeText(getApplicationContext(), "Trasa zrusena!", Toast.LENGTH_SHORT).show();
+            }
+        }).show();
     }
 
-    private void showMarkerDetailCacheDialog(Cache cacheFromMarker){
+    private void showMarkerDetailCacheDialog(Cache cacheFromMarker) {
         final Cache cache = cacheFromMarker;
         LatLng myLocLatLon = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
         LatLng destinationCoord = new LatLng(cache.getLat(), cache.getLon());
@@ -1106,10 +1106,10 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         Toast.makeText(getApplicationContext(), "Click Detail!", Toast.LENGTH_SHORT).show();
                         Intent intent = new Intent(getApplicationContext(), SelectDetailCacheActivity.class);
                         intent.putExtra("id", cache.getId());
-                        if(isTraceCreated) {
+                        if (isTraceCreated) {
                             intent.putExtra("requestCode", 11);
                             startActivityForResult(intent, 11);
-                        }else {
+                        } else {
                             intent.putExtra("requestCode", 10);
                             startActivityForResult(intent, 10);
                         }
@@ -1140,7 +1140,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         if (textView != null) textView.setTypeface(Typeface.MONOSPACE);
     }
 
-    private void showMarkerDetailWaypointDialog(Waypoint waypointFromMarker){
+    private void showMarkerDetailWaypointDialog(Waypoint waypointFromMarker) {
         final Waypoint wpt = waypointFromMarker;
         LatLng myLocLatLon = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
         LatLng destinationCoord = new LatLng(wpt.getLat(), wpt.getLon());
@@ -1201,10 +1201,10 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         Toast.makeText(getApplicationContext(), "Click Detail!", Toast.LENGTH_SHORT).show();
                         Intent intent = new Intent(getApplicationContext(), DetailWptActivity.class);
                         intent.putExtra("id", wpt.getId());
-                        if(isTraceCreated) {
+                        if (isTraceCreated) {
                             intent.putExtra("requestCode", 11);
                             startActivityForResult(intent, 11);
-                        }else {
+                        } else {
                             intent.putExtra("requestCode", 10);
                             startActivityForResult(intent, 10);
                         }
@@ -1306,15 +1306,13 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             createCacheMarker(caches.get(i));
         }
         if (isShowWptsEnabled) {
-            if (filterFind == FILTER_ALL) {
-                for (int i = 0; i < wpts.size(); i++) {
-                    createWptMarker(wpts.get(i));
-                }
+            for (int i = 0; i < wpts.size(); i++) {
+                createWptMarker(wpts.get(i));
             }
         }
     }
 
-    private void findWpts(int filterFind){
+    private void findWpts(int filterFind) {
         Log.i(TAG, "findWptsFilter");
         Context ctx = getApplicationContext();
         Caches_DB caches_db = new Caches_DB(ctx);
@@ -1322,21 +1320,19 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         ArrayList<Waypoint> wpts = caches_db.getWptsFilter(filterFind);
         caches_db.close();
         if (isShowWptsEnabled) {
-            if (filterFind == FILTER_ALL) {
-                for (int i = 0; i < wpts.size(); i++) {
-                    createWptMarker(wpts.get(i));
-                }
+            for (int i = 0; i < wpts.size(); i++) {
+                createWptMarker(wpts.get(i));
             }
         } else {
-            for(int i = 0; i < markers.size(); i++){
-                if(markers.get(i).getTag() instanceof  Waypoint){
+            for (int i = 0; i < markers.size(); i++) {
+                if (markers.get(i).getTag() instanceof Waypoint) {
                     markers.get(i).remove();
                 }
             }
         }
     }
 
-    private void createCacheMarker(Cache cache){
+    private void createCacheMarker(Cache cache) {
         LatLng destinationCoord = new LatLng(cache.getLat(), cache.getLon());
         MarkerOptions markerOptions = new MarkerOptions();
         markerOptions.position(destinationCoord);
@@ -1361,7 +1357,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         markers.add(marker);
     }
 
-    private void createWptMarker(Waypoint wpt){
+    private void createWptMarker(Waypoint wpt) {
         LatLng destinationCoord = new LatLng(wpt.getLat(), wpt.getLon());
         MarkerOptions markerOptions = new MarkerOptions();
         markerOptions.position(destinationCoord);
@@ -1537,20 +1533,19 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             for (int i = 0; i < shortestRoutePoints.size(); i++) {
                 System.out.println(shortestRoutePoints.get(i).getTitle());
             }
-            viewDistance.setText("Celková vzdálenost: " + String.format( "%.3f", totalDistance ) + " km");
+            viewDistance.setText("Celková vzdálenost: " + String.format("%.3f", totalDistance) + " km");
 
 
             //TODO drawLine points between shortest Route Points
-            if (polylines==null) {
+            if (polylines == null) {
                 polylines = new ArrayList<>();
             } else {
-                for(Polyline line : polylines)
-                {
+                for (Polyline line : polylines) {
                     line.remove();
                 }
             }
             for (int i = 0; i < shortestRoutePoints.size() - 1; i++) {
-                drawLine(shortestRoutePoints.get(i).getPosition(), shortestRoutePoints.get(i+1).getPosition());
+                drawLine(shortestRoutePoints.get(i).getPosition(), shortestRoutePoints.get(i + 1).getPosition());
             }
             for (int i = 0; i < markers.size(); i++) {
                 markers.get(i).setSnippet("Klikni pro více detailů!");
@@ -1577,7 +1572,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         googleMap.setOnPolylineClickListener(new GoogleMap.OnPolylineClickListener() {
             @Override
             public void onPolylineClick(Polyline polyline) {
-                viewDistance.setText("Celková vzdálenost: " + String.format( "%.3f", totalDistance ) + " km");
+                viewDistance.setText("Celková vzdálenost: " + String.format("%.3f", totalDistance) + " km");
                 isTraceClicked = true;
             }
         });
