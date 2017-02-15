@@ -1,11 +1,13 @@
 package cz.uhk.fim.soucera.geocatcher;
 
 import android.Manifest;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
@@ -24,6 +26,7 @@ import cz.uhk.fim.soucera.geocatcher.caches.MainCachesActivity;
 import cz.uhk.fim.soucera.geocatcher.features.CompassActivity;
 import cz.uhk.fim.soucera.geocatcher.features.FlashActivity;
 import cz.uhk.fim.soucera.geocatcher.imports.GPXparser;
+import cz.uhk.fim.soucera.geocatcher.imports.ImportLoadingAsync;
 import cz.uhk.fim.soucera.geocatcher.imports.ImportObject;
 import cz.uhk.fim.soucera.geocatcher.imports.LOCparser;
 import cz.uhk.fim.soucera.geocatcher.waypoints.Waypoint;
@@ -39,6 +42,8 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<Cache> caches;
     private ArrayList<Waypoint> waypoints;
     private ArrayList<ArrayList<Waypoint>> groupsOfWaypoints;
+    private String Fpath;
+    private String fileName;
 
     private static String TAG = MainActivity.class.getName();
     private static final int PERMISSION_REQUEST_CODE = 1;
@@ -214,9 +219,9 @@ public class MainActivity extends AppCompatActivity {
             super.onActivityResult(requestCode, resultCode, data);
         } else {
             Log.i(TAG, "Activity result - start import");
-            String Fpath = "";
+            Fpath = "";
             String testPath = data.getDataString();
-            String fileName = data.getData().getLastPathSegment();
+            fileName = data.getData().getLastPathSegment();
             if (testPath.contains("content://")) {
                 try {
                     Fpath = GPXparser.getFilePath(getApplicationContext(), data.getData());
@@ -259,54 +264,9 @@ public class MainActivity extends AppCompatActivity {
                         break;
                     case REQUEST_CODE_GPX:
                         Log.i(TAG, "ActivityResult - IMPORT GPX");
-                        ImportObject importObject = GPXparser.getCacheFromFile(Fpath, fileName);
-                        caches = importObject.getCaches();
-                        waypoints = importObject.getWaypoints();
-                        groupsOfWaypoints = importObject.getGroupsOfWaypoints();
-
-                        if (caches != null) {
-                            for (int i = 0; i < caches.size(); i++) {
-                                if (!caches_db.isCacheRecordFound(caches.get(i).getCode())) {
-                                    long id_cache = caches_db.insertCache(caches.get(i));
-                                    if (caches.get(i).getLogs().size() > 0) {
-                                        caches_db.insertLogs(caches.get(i).getLogs(), id_cache);
-                                    }
-                                    if (groupsOfWaypoints != null) {
-                                        if (groupsOfWaypoints.size() > 0)
-                                            caches_db.insertWpts(groupsOfWaypoints.get(i), id_cache);
-                                    }
-                                    if (caches.size() == 1 && waypoints != null) {
-                                        caches_db.insertWpts(waypoints, id_cache);
-                                    }
-                                } else {
-                                    Log.i(TAG, "Cache found in DB, not again insert!");
-                                }
-
-                            }
-                        }
-                        if (waypoints != null && groupsOfWaypoints == null && caches.size() > 1) {
-                            for (int i = 0; i < waypoints.size(); i++) {
-                                if (!caches_db.isWaypointRecordFound(waypoints.get(i).getName())) {
-                                        caches_db.insertWpt(waypoints.get(i), -1);
-                                } else {
-                                    Log.i(TAG, "Waypoint found in DB, not again insert!");
-                                }
-                            }
-                        }
+                        LoadingImportGPX loadingImport = new LoadingImportGPX();
+                        loadingImport.execute();
                         break;
-                }
-                if (caches != null && caches.size() > 0 && groupsOfWaypoints != null && groupsOfWaypoints.size() > 0) {
-                    Log.i(TAG, "Import caches & wpts with pairing successfully done!");
-                    Toast.makeText(getApplicationContext(), "Import caches & wpts with pairing successfully done!", Toast.LENGTH_SHORT).show();
-                } else if (caches != null && caches.size() > 0 && waypoints != null && waypoints.size() > 0) {
-                    Log.i(TAG, "Import caches & wpts successfully done!");
-                    Toast.makeText(getApplicationContext(), "Import caches & wpts successfully done!", Toast.LENGTH_SHORT).show();
-                } else if (caches != null && caches.size() > 0 && waypoints == null) {
-                    Log.i(TAG, "Import caches successfully done!");
-                    Toast.makeText(getApplicationContext(), "Import caches successfully done!", Toast.LENGTH_SHORT).show();
-                } else {
-                    Log.e(TAG, "Import unsuccessfully done! Something wrong with data file!");
-                    Toast.makeText(getApplicationContext(), "Import  unsuccessfully done! Something wrong with data file!", Toast.LENGTH_SHORT).show();
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -343,6 +303,81 @@ public class MainActivity extends AppCompatActivity {
                     Log.e("value", "Permission Denied, You cannot use local drive .");
                 }
                 break;
+        }
+    }
+
+    private class LoadingImportGPX extends AsyncTask<String, Void, Boolean> {
+
+        private ProgressDialog dialog = new ProgressDialog(MainActivity.this);
+        @Override
+        protected void onPreExecute() {
+            this.dialog.setMessage("Probíhá import keší, počkejte prosím.");
+            this.dialog.show();
+        }
+
+        @Override
+        protected Boolean doInBackground(final String... args) {
+            try {
+                ImportObject importObject = GPXparser.getCacheFromFile(Fpath, fileName);
+                caches = importObject.getCaches();
+                waypoints = importObject.getWaypoints();
+                groupsOfWaypoints = importObject.getGroupsOfWaypoints();
+                Caches_DB caches_db = new Caches_DB(getApplicationContext());
+                if (caches != null) {
+                    for (int i = 0; i < caches.size(); i++) {
+                        if (!caches_db.isCacheRecordFound(caches.get(i).getCode())) {
+                            long id_cache = caches_db.insertCache(caches.get(i));
+                            if (caches.get(i).getLogs().size() > 0) {
+                                caches_db.insertLogs(caches.get(i).getLogs(), id_cache);
+                            }
+                            if (groupsOfWaypoints != null) {
+                                if (groupsOfWaypoints.size() > 0)
+                                    caches_db.insertWpts(groupsOfWaypoints.get(i), id_cache);
+                            }
+                            if (caches.size() == 1 && waypoints != null) {
+                                caches_db.insertWpts(waypoints, id_cache);
+                            }
+                        } else {
+                            Log.i(TAG, "Cache found in DB, not again insert!");
+                        }
+                    }
+                }
+                if (waypoints != null && groupsOfWaypoints == null && caches.size() > 1) {
+                    for (int i = 0; i < waypoints.size(); i++) {
+                        if (!caches_db.isWaypointRecordFound(waypoints.get(i).getName())) {
+                            caches_db.insertWpt(waypoints.get(i), -1);
+                        } else {
+                            Log.i(TAG, "Waypoint found in DB, not again insert!");
+                        }
+                    }
+                }
+                return true;
+            } catch (Exception e) {
+                Log.e("tag", "error", e);
+                return false;
+            }
+        }
+
+        @Override
+        protected void onPostExecute(final Boolean success) {
+            if (dialog.isShowing()) {
+                dialog.dismiss();
+            }
+
+            if (caches != null && caches.size() > 0 && groupsOfWaypoints != null && groupsOfWaypoints.size() > 0) {
+                Log.i(TAG, "Import caches & wpts with pairing successfully done!");
+                Toast.makeText(getApplicationContext(), "Import caches & wpts with pairing successfully done!", Toast.LENGTH_SHORT).show();
+            } else if (caches != null && caches.size() > 0 && waypoints != null && waypoints.size() > 0) {
+                Log.i(TAG, "Import caches & wpts successfully done!");
+                Toast.makeText(getApplicationContext(), "Import caches & wpts successfully done!", Toast.LENGTH_SHORT).show();
+            } else if (caches != null && caches.size() > 0 && waypoints == null) {
+                Log.i(TAG, "Import caches successfully done!");
+                Toast.makeText(getApplicationContext(), "Import caches successfully done!", Toast.LENGTH_SHORT).show();
+            } else {
+                Log.e(TAG, "Import unsuccessfully done! Something wrong with data file!");
+                Toast.makeText(getApplicationContext(), "Import  unsuccessfully done! Something wrong with data file!", Toast.LENGTH_SHORT).show();
+            }
+
         }
     }
 }
