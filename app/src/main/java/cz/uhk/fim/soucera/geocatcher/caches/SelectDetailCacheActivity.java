@@ -18,6 +18,7 @@ public class SelectDetailCacheActivity extends AppCompatActivity {
 
     private static final String TAG = SelectDetailCacheActivity.class.getName();
     private int id;
+    private int requestCode;
     private long longId;
     private MenuItem menuItem_;
     private static final int LIST_HLEDANE = 0;
@@ -29,6 +30,7 @@ public class SelectDetailCacheActivity extends AppCompatActivity {
         setContentView(R.layout.activity_detail_cache);
 
         id = getIntent().getIntExtra("id", 0);
+        requestCode = getIntent().getIntExtra("requestCode", 0);
         Fragment_Detail_Cache detailFragment = (Fragment_Detail_Cache) getSupportFragmentManager().findFragmentById(R.id.detail_cache_frag);
         detailFragment.setId(id);
     }
@@ -72,7 +74,9 @@ public class SelectDetailCacheActivity extends AppCompatActivity {
                 return true;
             case android.R.id.home:
                 Intent returnIntent = new Intent();
+                returnIntent.putExtra("idCache", id);
                 setResult(Activity.RESULT_CANCELED, returnIntent);
+
                 finish();
                 return true;
         }
@@ -81,6 +85,7 @@ public class SelectDetailCacheActivity extends AppCompatActivity {
 
     public void onBackPressed(){
         Intent returnIntent = new Intent();
+        returnIntent.putExtra("idCache", id);
         setResult(Activity.RESULT_CANCELED, returnIntent);
         finish();
     }
