@@ -218,6 +218,20 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         }
 
+        if(mGoogleApiClient == null){
+            System.out.println("ApiClient null");
+            mGoogleApiClient = new GoogleApiClient.Builder(this)
+                    .addConnectionCallbacks(this)
+                    .addOnConnectionFailedListener(this)
+                    .addApi(LocationServices.API)
+                    .build();
+        } else if(!mGoogleApiClient.isConnected()){
+            System.out.println("Not connected - connecting");
+            mGoogleApiClient.connect();
+        } else if(mGoogleApiClient.isConnected()){
+            System.out.println("RECONNECT");
+            mGoogleApiClient.reconnect();
+        }
 
         try {
             if (requestCode == 11) {
