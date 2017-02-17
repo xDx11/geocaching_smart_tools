@@ -232,35 +232,14 @@ public class MainActivity extends AppCompatActivity {
                 Fpath = data.getData().getPath();
             }
 
-            /*
-            System.out.println("ACTIVITY_RESULT_BEGIN_FPATH: " + Fpath);
-            System.out.println("getDataString:" + data.getDataString());
-            System.out.println("getData:" + data.getData());
-            System.out.println("getData.getPath:" + data.getData().getPath());
-            System.out.println("getData.getLastPathSegment:" + data.getData().getLastPathSegment());
-            System.out.println("getData.getEncodedPath:" + data.getData().getEncodedPath());
-            System.out.println("Environment.toString:" + Environment.getExternalStorageDirectory().toString());
-            System.out.println("Environment.getPath:" + Environment.getExternalStorageDirectory().getPath());
-            System.out.println("Environment.getAbsoluthPath:" + Environment.getExternalStorageDirectory().getAbsolutePath());
-            System.out.println("Environment.PARENT.AbsoluthFile:" + Environment.getExternalStorageDirectory().getParentFile().getAbsolutePath());
-            //Fpath = Fpath.replace(Environment.getExternalStorageDirectory().toString(),"");
-            //System.out.println(Environment.getExternalStorageDirectory().toString()+name);
-            System.out.println(Environment.getExternalStorageState());
-            //verifyStoragePermissions(this);
-            */
-
             Context ctx = getApplicationContext();
             Caches_DB caches_db = new Caches_DB(ctx);
             try {
                 switch (requestCode) {
                     case REQUEST_CODE_LOC:
                         Log.i(TAG, "ActivityResult - IMPORT LOC");
-                        caches = LOCparser.getCachceFromFile(Fpath, fileName);
-                        if (caches != null) {
-                            for (int i = 0; i < caches.size(); i++) {
-                                caches_db.insertCache(caches.get(i));
-                            }
-                        }
+                        LoadingImportLOC loadingImportLoc = new LoadingImportLOC();
+                        loadingImportLoc.execute();
                         break;
                     case REQUEST_CODE_GPX:
                         Log.i(TAG, "ActivityResult - IMPORT GPX");
@@ -351,6 +330,7 @@ public class MainActivity extends AppCompatActivity {
                         }
                     }
                 }
+                caches_db.close();
                 return true;
             } catch (Exception e) {
                 Log.e("tag", "error", e);
@@ -371,6 +351,53 @@ public class MainActivity extends AppCompatActivity {
                 Log.i(TAG, "Import caches & wpts successfully done!");
                 Toast.makeText(getApplicationContext(), "Import caches & wpts successfully done!", Toast.LENGTH_SHORT).show();
             } else if (caches != null && caches.size() > 0 && waypoints == null) {
+                Log.i(TAG, "Import caches successfully done!");
+                Toast.makeText(getApplicationContext(), "Import caches successfully done!", Toast.LENGTH_SHORT).show();
+            } else {
+                Log.e(TAG, "Import unsuccessfully done! Something wrong with data file!");
+                Toast.makeText(getApplicationContext(), "Import  unsuccessfully done! Something wrong with data file!", Toast.LENGTH_SHORT).show();
+            }
+
+        }
+    }
+
+    private class LoadingImportLOC extends AsyncTask<String, Void, Boolean> {
+
+        private ProgressDialog dialog = new ProgressDialog(MainActivity.this);
+        @Override
+        protected void onPreExecute() {
+            this.dialog.setMessage("Probíhá import keší, počkejte prosím.");
+            this.dialog.show();
+        }
+
+        @Override
+        protected Boolean doInBackground(final String... args) {
+            try {
+
+                Caches_DB caches_db = new Caches_DB(getApplicationContext());
+                caches = LOCparser.getCachceFromFile(Fpath, fileName);
+                if (caches != null) {
+                        for (int i = 0; i < caches.size(); i++) {
+                            if (!caches_db.isCacheRecordFound(caches.get(i).getCode())) {
+                                long id_cache = caches_db.insertCache(caches.get(i));
+                            }
+                        }
+                }
+                caches_db.close();
+                return true;
+            } catch (Exception e) {
+                Log.e("tag", "error", e);
+                return false;
+            }
+        }
+
+        @Override
+        protected void onPostExecute(final Boolean success) {
+            if (dialog.isShowing()) {
+                dialog.dismiss();
+            }
+
+            if (caches != null && caches.size() > 0) {
                 Log.i(TAG, "Import caches successfully done!");
                 Toast.makeText(getApplicationContext(), "Import caches successfully done!", Toast.LENGTH_SHORT).show();
             } else {

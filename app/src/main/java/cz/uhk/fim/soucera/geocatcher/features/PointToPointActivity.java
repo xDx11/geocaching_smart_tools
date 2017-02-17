@@ -1,6 +1,8 @@
 package cz.uhk.fim.soucera.geocatcher.features;
 
 import android.Manifest;
+import android.app.Activity;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.hardware.GeomagneticField;
 import android.hardware.Sensor;
@@ -15,6 +17,7 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.view.MenuItem;
 import android.view.animation.Animation;
 import android.view.animation.LinearInterpolator;
 import android.view.animation.RotateAnimation;
@@ -31,8 +34,11 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.LatLng;
 
+import cz.uhk.fim.soucera.geocatcher.Cache;
+import cz.uhk.fim.soucera.geocatcher.Caches_DB;
 import cz.uhk.fim.soucera.geocatcher.R;
 import cz.uhk.fim.soucera.geocatcher.utils.Utils;
+import cz.uhk.fim.soucera.geocatcher.waypoints.Waypoint;
 
 
 public class PointToPointActivity extends AppCompatActivity implements
@@ -50,6 +56,7 @@ public class PointToPointActivity extends AppCompatActivity implements
     private float currentDirection = 0f;
     private ImageView imagearrow;
     private TextView tvDistance;
+    private TextView tvCacheName;
 
     private SensorManager mSensorManager;
     private Sensor accelerometer;
@@ -85,8 +92,24 @@ public class PointToPointActivity extends AppCompatActivity implements
 
             tvDistance = (TextView) findViewById(R.id.tv_distance);
             imagearrow = (ImageView) findViewById(R.id.iv_compassarrow);
+            tvCacheName = (TextView) findViewById(R.id.tv_cache_name_navigate);
             double lat = getIntent().getDoubleExtra("lat", 0);
             double lon = getIntent().getDoubleExtra("long", 0);
+            int idCache = getIntent().getIntExtra("idCache", 0);
+            int idWpt = getIntent().getIntExtra("idWpt", 0);
+            if(idCache > 0){
+                Caches_DB caches_db = new Caches_DB(this);
+                Cache cache = caches_db.getCache(idCache);
+                caches_db.close();
+                tvCacheName.setText(cache.getName());
+            } else if (idWpt > 0){
+                Caches_DB caches_db = new Caches_DB(this);
+                Waypoint wpt = caches_db.getWpt(idWpt);
+                caches_db.close();
+                tvCacheName.setText(wpt.getDesc());
+            } else {
+                tvCacheName.setText("-");
+            }
 
             targetLoc = new Location("target");
             targetLoc.setLatitude(lat);
@@ -94,8 +117,24 @@ public class PointToPointActivity extends AppCompatActivity implements
         } catch (Exception e){
             e.printStackTrace();
         }
+    }
 
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case android.R.id.home:
+                Intent returnIntent = new Intent();
+                setResult(Activity.RESULT_CANCELED, returnIntent);
+                finish();
+                return true;
+        }
+        return true;
+    }
 
+    public void onBackPressed(){
+        Intent returnIntent = new Intent();
+        setResult(Activity.RESULT_CANCELED, returnIntent);
+        finish();
     }
 
     @Override
@@ -132,7 +171,7 @@ public class PointToPointActivity extends AppCompatActivity implements
         currentDirection = direction;
 
 
-        rotateAnim.setDuration(4000);
+        rotateAnim.setDuration(1000);
         rotateAnim.setFillAfter(true);
         rotateAnim.setInterpolator(new LinearInterpolator());
         imagearrow.startAnimation(rotateAnim);

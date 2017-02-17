@@ -210,6 +210,15 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 System.out.println("RESULT FROM SELECT = RESULT_CANCELED");
             }
         }
+
+        if (requestCode == 12) {
+            if (resultCode == Activity.RESULT_CANCELED) {
+                //findCaches(filterFind, filterType);
+                System.out.println("RESULT FROM NAVIGATE = RESULT_CANCELED");
+            }
+        }
+
+
         try {
             if (requestCode == 11) {
                 int id = data.getIntExtra("idCache", 0);
@@ -391,12 +400,17 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             case R.id.action_planning_route:
                 Log.i(TAG, "MenuClick_track_route");
                 recolorMarkers();
+                if(marker!=null)
+                    marker.hideInfoWindow();
                 isShortestWayEnabled = true;
                 routePoints = new ArrayList<>();
                 viewDistance.setVisibility(View.VISIBLE);
                 viewDistance.setText("Seznam bodu trasy: \n" +
                         "Nastavite zvolenim ukazatelu na mape."
                 );
+                if (isGeofencingEnabled) {
+                    stopGeofence();
+                }
                 return true;
             case R.id.action_enable_geofence:
                 Log.i(TAG, "MenuClick_enable_geofence_radius");
@@ -1046,7 +1060,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                                 if (!status)
                                     markers.get(i).remove();
                             }
-
                         } else {
                             Toast.makeText(getApplicationContext(), "Pro vytvoreni trasy jsou potreba alespon dva mapove body!", Toast.LENGTH_SHORT).show();
                         }
@@ -1124,7 +1137,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                                 intent.putExtra("lat", cache.getLat());
                                 intent.putExtra("long", cache.getLon());
-                                getApplicationContext().startActivity(intent);
+                                intent.putExtra("idCache", cache.getId());
+                                //getApplicationContext().startActivity(intent);
+                                startActivityForResult(intent, 12);
                             } else {
                                 Log.e(TAG, "Device doesn't support sensors for this feature!");
                                 Toast.makeText(getApplicationContext(), "Device doesn't support sensors for this feature!", Toast.LENGTH_LONG).show();
@@ -1219,7 +1234,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                                 intent.putExtra("lat", wpt.getLat());
                                 intent.putExtra("long", wpt.getLon());
-                                getApplicationContext().startActivity(intent);
+                                intent.putExtra("idWpt", wpt.getId());
+                                startActivityForResult(intent, 12);
                             } else {
                                 Log.e(TAG, "Device doesn't support sensors for this feature!");
                                 Toast.makeText(getApplicationContext(), "Device doesn't support sensors for this feature!", Toast.LENGTH_LONG).show();
@@ -1681,10 +1697,21 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         if (status.isSuccess()) {
             Log.i(TAG, "onResult: Status.isSuccess");
             if (isGeofencingEnabled) {
-                drawGeofence();
+                if(isShortestWayEnabled){
+                    if (geoFenceLimits != null){
+                        Log.i(TAG, "circleDraw: del");
+                        geoFenceLimits.remove();
+                    }
+                } else {
+                    drawGeofence();
+                }
+
             } else {
-                if (geoFenceLimits != null)
+                if (geoFenceLimits != null){
+                    Log.i(TAG, "circleDraw: del");
                     geoFenceLimits.remove();
+                }
+
             }
         } else {
             Log.i(TAG, "onResult: FAIL");

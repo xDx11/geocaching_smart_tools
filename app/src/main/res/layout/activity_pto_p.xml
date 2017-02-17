@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/colorDarkGrey"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context=".features.PointToPointActivity">
 
@@ -24,7 +25,19 @@
         android:id="@+id/textView"
         android:layout_below="@+id/my_toolbar"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="35dp" />
+        android:layout_marginTop="35dp"
+        android:textSize="30sp"
+        android:textColor="@color/colorWhite" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:id="@+id/tv_cache_name_navigate"
+        android:layout_below="@+id/textView"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="15dp"
+        android:textColor="@color/colorWhite" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -33,6 +46,7 @@
         android:id="@+id/tv_distance"
         android:layout_below="@+id/textView"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="34dp" />
+        android:layout_marginTop="45dp"
+        android:textColor="@color/colorWhite" />
 
 </RelativeLayout>
