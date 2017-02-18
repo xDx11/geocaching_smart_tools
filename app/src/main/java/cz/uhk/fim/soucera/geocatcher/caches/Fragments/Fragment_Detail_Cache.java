@@ -67,6 +67,7 @@ public class Fragment_Detail_Cache extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        /*
         if(getArguments() != null){
             id = getArguments().getInt("id",-1);
             Log.i(TAG, "DetailCache id is: "+id);
@@ -74,6 +75,7 @@ public class Fragment_Detail_Cache extends Fragment {
             Log.e(TAG, "DetailCache: NO ID!");
             id = -1;
         }
+        */
     }
 
     @Override
@@ -112,10 +114,11 @@ public class Fragment_Detail_Cache extends Fragment {
         //Drawable progress = ratingDiff.getProgressDrawable();
         //DrawableCompat.setTint(progress, Color.parseColor("#ff90b6"));
 
-
+        /*
         if(id>(-1)){
             setId(id);
         }
+        */
 
         return layout;
     }
@@ -194,10 +197,6 @@ public class Fragment_Detail_Cache extends Fragment {
             String longMin = Location.convert(cache.getLon(), Location.FORMAT_MINUTES).replace(":","°").replace(",", ".");
             String[] latMinParts = latMin.split("\\.");
             String[] lonMinParts = longMin.split("\\.");
-            System.out.println(latMinParts.length);
-            System.out.println(lonMinParts.length);
-            System.out.println(latMin);
-            System.out.println(longMin);
             if(latMinParts.length==1){
                 latMin = latMinParts[0];
             } else {

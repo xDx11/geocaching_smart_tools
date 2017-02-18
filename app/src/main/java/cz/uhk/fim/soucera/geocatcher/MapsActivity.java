@@ -118,6 +118,11 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private static final CharSequence[] GEOFENCE_RADIUS_ITEMS = {"50", "100", "150", "300"};
     private static final CharSequence[] CACHES_TYPE_ITEMS = {"All", "Traditional", "Multi", "Mystery"};
     private static final CharSequence[] FILTER_FIND_ITEMS = {"Všechny keše", "Nalezené keše", "Nenalezené keše"};
+    private static final CharSequence[] NAVIGATE_TYPE_ITEMS = {"Driving", "Walking", "Bicycling"};
+    private static final int NAVITATE_MODE_DRIVING = 0;
+    private static final int NAVITATE_MODE_WALKING = 1;
+    private static final int NAVITATE_MODE_BICYCLING = 2;
+    private String navigateMode;
     private float previousZoomLevel = -1.0f;
     int checkItemRadius;
     int checkItemMapType;
@@ -522,7 +527,11 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         googleMap.setOnPolylineClickListener(new GoogleMap.OnPolylineClickListener() {
             @Override
             public void onPolylineClick(Polyline polyline) {
-                viewDistance.setText("Celková vzdálenost: " + String.format("%.3f", totalDistance) + " km");
+                if(isGoogleDirectionApi)
+                    viewDistance.setText("Celková vzdálenost: " + String.format("%.3f", totalDistance) + " km" + "\n"
+                            +   "Režim: " + navigateMode);
+                else
+                    viewDistance.setText("Celková vzdálenost: " + String.format("%.3f", totalDistance) + " km");
                 isTraceClicked = true;
             }
         });
@@ -1129,21 +1138,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                             }
                         } else {
                             if (routePoints.size() >= 2) {
-                                planningShortestRouteGoogleApiDirection(routePoints);
-                                isShortestWayEnabled = false;
-                                isTraceClicked = true;
-                                isTraceCreated = true;
-                                marker.hideInfoWindow();
-                                for (int i = 0; i < markers.size(); i++) {
-                                    boolean status = false;
-                                    for (int j = 0; j < routePoints.size(); j++) {
-                                        if (!status) {
-                                            status = (markers.get(i).equals(routePoints.get(j)));
-                                        }
-                                    }
-                                    if (!status)
-                                        markers.get(i).remove();
-                                }
+                                showNavigationTypeDialog();
                             } else {
                                 Toast.makeText(getApplicationContext(), "Pro vytvoreni trasy jsou potreba alespon dva mapove body!", Toast.LENGTH_SHORT).show();
                             }
@@ -1161,6 +1156,57 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 Toast.makeText(getApplicationContext(), "Trasa zrusena!", Toast.LENGTH_SHORT).show();
             }
         }).show();
+    }
+
+    private void showNavigationTypeDialog() {
+        Log.i(TAG, "ShowNavigationTypeDialog");
+        final String fDialogTitle = "Typ navigace trasy: ";
+        int checkItemNavigateType = 0;
+        AlertDialog.Builder builder = new AlertDialog.Builder(this, R.style.YourAlertDialogTheme);
+        builder.setTitle(fDialogTitle);
+        builder.setSingleChoiceItems(
+                NAVIGATE_TYPE_ITEMS,
+                checkItemNavigateType,
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int item) {
+                        switch (item) {
+                            case NAVITATE_MODE_DRIVING:
+                                navigateMode = "driving";
+                                break;
+                            case NAVITATE_MODE_WALKING:
+                                navigateMode = "walking";
+                                break;
+                            case NAVITATE_MODE_BICYCLING:
+                                navigateMode = "bicycling";
+                                break;
+                            default:
+                                navigateMode = "driving";
+                        }
+                        planningShortestRouteGoogleApiDirection(routePoints);
+                        isShortestWayEnabled = false;
+                        isTraceClicked = true;
+                        isTraceCreated = true;
+                        marker.hideInfoWindow();
+                        for (int i = 0; i < markers.size(); i++) {
+                            boolean status = false;
+                            for (int j = 0; j < routePoints.size(); j++) {
+                                if (!status) {
+                                    status = (markers.get(i).equals(routePoints.get(j)));
+                                }
+                            }
+                            if (!status)
+                                markers.get(i).remove();
+                        }
+                        dialog.dismiss();
+                    }
+                }
+        ).setNegativeButton("Zrušit", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+
+            }
+        })
+                .show();
     }
 
     private void showMarkerDetailCacheDialog(Cache cacheFromMarker) {
@@ -1931,7 +1977,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         urlString.append(Double.toString(destlat));
         urlString.append(",");
         urlString.append(Double.toString(destlog));
-        urlString.append("&sensor=false&mode=driving&alternatives=true");
+        urlString.append("&sensor=false");
+        urlString.append("&mode="+navigateMode);
+        urlString.append("&alternatives=true");
         urlString.append("&key=AIzaSyAb43dYdHwWWcOFU7hVzVhU9OVt0w5mHgs");
         //System.out.println(urlString);
         return urlString.toString();
@@ -1964,7 +2012,10 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             progressDialog.hide();
             if(result!=null){
                 drawPath(result);
-                viewDistance.setText("Celková vzdálenost: " + String.format("%.3f", totalDistance).replace(',', '.') + " km");
+                viewDistance.setText("Celková vzdálenost: " + String.format("%.3f", totalDistance).replace(',', '.')
+                        + " km" + "\n"
+                        + "Režim: " + navigateMode);
+
             }
         }
 
