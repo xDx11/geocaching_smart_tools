@@ -3,6 +3,7 @@ package cz.uhk.fim.soucera.geocatcher;
 import android.Manifest;
 import android.app.Activity;
 import android.app.PendingIntent;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -17,6 +18,7 @@ import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationManager;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -66,6 +68,10 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -74,6 +80,7 @@ import java.util.Locale;
 import cz.uhk.fim.soucera.geocatcher.caches.SelectCachesActivity;
 import cz.uhk.fim.soucera.geocatcher.caches.SelectDetailCacheActivity;
 import cz.uhk.fim.soucera.geocatcher.features.PointToPointActivity;
+import cz.uhk.fim.soucera.geocatcher.utils.JSONParser;
 import cz.uhk.fim.soucera.geocatcher.waypoints.DetailWptActivity;
 import cz.uhk.fim.soucera.geocatcher.utils.Utils;
 import cz.uhk.fim.soucera.geocatcher.waypoints.Waypoint;
@@ -122,6 +129,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private boolean isShortestWayEnabled;
     private boolean isTraceClicked;
     private boolean isTraceCreated;
+    private boolean isGoogleDirectionApi;
     private TextView viewDistance;
     private int pomIndex;
     private double totalDistance;
@@ -417,6 +425,22 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 if(marker!=null)
                     marker.hideInfoWindow();
                 isShortestWayEnabled = true;
+                routePoints = new ArrayList<>();
+                viewDistance.setVisibility(View.VISIBLE);
+                viewDistance.setText("Seznam bodu trasy: \n" +
+                        "Nastavite zvolenim ukazatelu na mape."
+                );
+                if (isGeofencingEnabled) {
+                    stopGeofence();
+                }
+                return true;
+            case R.id.action_planning_route_direction_google_api:
+                Log.i(TAG, "MenuClick_track_route");
+                recolorMarkers();
+                if(marker!=null)
+                    marker.hideInfoWindow();
+                isShortestWayEnabled = true;
+                isGoogleDirectionApi = true;
                 routePoints = new ArrayList<>();
                 viewDistance.setVisibility(View.VISIBLE);
                 viewDistance.setText("Seznam bodu trasy: \n" +
@@ -1058,24 +1082,46 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 .setPositiveButton("Route", new DialogInterface.OnClickListener() {
 
                     public void onClick(DialogInterface dialog, int whichButton) {
-                        if (routePoints.size() >= 2) {
-                            planningShortestRoute(routePoints);
-                            isShortestWayEnabled = false;
-                            isTraceClicked = true;
-                            isTraceCreated = true;
-                            marker.hideInfoWindow();
-                            for (int i = 0; i < markers.size(); i++) {
-                                boolean status = false;
-                                for (int j = 0; j < routePoints.size(); j++) {
-                                    if (!status) {
-                                        status = (markers.get(i).equals(routePoints.get(j)));
+                        if(!isGoogleDirectionApi) {
+                            if (routePoints.size() >= 2) {
+                                planningShortestRoute(routePoints);
+                                isShortestWayEnabled = false;
+                                isTraceClicked = true;
+                                isTraceCreated = true;
+                                marker.hideInfoWindow();
+                                for (int i = 0; i < markers.size(); i++) {
+                                    boolean status = false;
+                                    for (int j = 0; j < routePoints.size(); j++) {
+                                        if (!status) {
+                                            status = (markers.get(i).equals(routePoints.get(j)));
+                                        }
                                     }
+                                    if (!status)
+                                        markers.get(i).remove();
                                 }
-                                if (!status)
-                                    markers.get(i).remove();
+                            } else {
+                                Toast.makeText(getApplicationContext(), "Pro vytvoreni trasy jsou potreba alespon dva mapove body!", Toast.LENGTH_SHORT).show();
                             }
                         } else {
-                            Toast.makeText(getApplicationContext(), "Pro vytvoreni trasy jsou potreba alespon dva mapove body!", Toast.LENGTH_SHORT).show();
+                            if (routePoints.size() >= 2) {
+                                planningShortestRouteGoogleApiDirection(routePoints);
+                                isShortestWayEnabled = false;
+                                isTraceClicked = true;
+                                isTraceCreated = true;
+                                marker.hideInfoWindow();
+                                for (int i = 0; i < markers.size(); i++) {
+                                    boolean status = false;
+                                    for (int j = 0; j < routePoints.size(); j++) {
+                                        if (!status) {
+                                            status = (markers.get(i).equals(routePoints.get(j)));
+                                        }
+                                    }
+                                    if (!status)
+                                        markers.get(i).remove();
+                                }
+                            } else {
+                                Toast.makeText(getApplicationContext(), "Pro vytvoreni trasy jsou potreba alespon dva mapove body!", Toast.LENGTH_SHORT).show();
+                            }
                         }
                     }
                 }).setNeutralButton("Zrusit", new DialogInterface.OnClickListener() {
@@ -1503,6 +1549,73 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     }
 
+    private void planningShortestRouteGoogleApiDirection(ArrayList<Marker> routePoints) {
+        Log.i(TAG, "planningShortestRouteGoogleApiDirection");
+        //TODO get distances matrix
+        int matrixSize = routePoints.size();
+        double[][] matrix = new double[matrixSize][matrixSize];
+        for (int i = 0; i < matrixSize; i++) {
+            for (int j = 0; j < matrixSize; j++) {
+                matrix[i][j] = Utils.CalculationByDistance(routePoints.get(i).getPosition(), routePoints.get(j).getPosition());
+            }
+        }
+
+        //TODO PLANNING ROUTE
+        ArrayList<Marker> shortestRoutePoints = new ArrayList<>();
+        totalDistance = 0;
+        try {
+            shortestRoutePoints.add(routePoints.get(0));
+            pomIndex = 0;
+            while (shortestRoutePoints.size() != routePoints.size()) {
+                double min = 0;
+                int pomJ;
+                int i = pomIndex;
+                for (int j = 0; j < matrixSize; j++) {
+                    pomJ = 0;
+                    while (min == 0) {
+                        if (!shortestRoutePoints.contains(routePoints.get(pomJ))) {
+                            min = matrix[i][pomJ];
+                            pomIndex = pomJ;
+                        }
+                        if (min == 0)
+                            pomJ += 1;
+                    }
+                    if (matrix[i][j] <= min && matrix[pomIndex][j] != 0) {
+                        if (!shortestRoutePoints.contains(routePoints.get(j))) {
+                            min = matrix[i][j];
+                            pomIndex = j;
+                        }
+                    }
+                }
+                totalDistance += min;
+                shortestRoutePoints.add(routePoints.get(pomIndex));
+            }
+
+
+
+            //TODO DRAWLINE
+            for (int i = 0; i < shortestRoutePoints.size() - 1; i++) {
+                double sourceLat = shortestRoutePoints.get(i).getPosition().latitude;
+                double sourceLon = shortestRoutePoints.get(i).getPosition().longitude;
+                double destinationLat = shortestRoutePoints.get(i+1).getPosition().latitude;
+                double destinationLon = shortestRoutePoints.get(i+1).getPosition().longitude;
+                String strUrl = makeURL(sourceLat, sourceLon, destinationLat, destinationLon);
+                connectAsyncTask asyncTask = new connectAsyncTask(strUrl);
+                asyncTask.execute();
+            }
+
+
+            for (int i = 0; i < markers.size(); i++) {
+                markers.get(i).setSnippet("Klikni pro více detailů!");
+            }
+            recolorMarkers();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+
     private void planningShortestRoute(ArrayList<Marker> routePoints) {
         Log.i(TAG, "planningShortestRoute");
         //TODO get distances matrix
@@ -1776,4 +1889,118 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     }
 
+
+
+    public String makeURL (double sourcelat, double sourcelog, double destlat, double destlog ){
+        StringBuilder urlString = new StringBuilder();
+        urlString.append("https://maps.googleapis.com/maps/api/directions/json");
+        urlString.append("?origin=");// from
+        urlString.append(Double.toString(sourcelat));
+        urlString.append(",");
+        urlString.append(Double.toString(sourcelog));
+        urlString.append("&destination=");// to
+        urlString.append(Double.toString(destlat));
+        urlString.append(",");
+        urlString.append(Double.toString(destlog));
+        urlString.append("&sensor=false&mode=driving&alternatives=true");
+        urlString.append("&key=AIzaSyAb43dYdHwWWcOFU7hVzVhU9OVt0w5mHgs");
+        //System.out.println(urlString);
+        return urlString.toString();
+    }
+
+    public void drawPath(String  result) {
+        try {
+            //Tranform the string into a json object
+            final JSONObject json = new JSONObject(result);
+            JSONArray routeArray = json.getJSONArray("routes");
+            JSONObject routes = routeArray.getJSONObject(0);
+            JSONObject overviewPolylines = routes.getJSONObject("overview_polyline");
+            String encodedString = overviewPolylines.getString("points");
+            List<LatLng> list = decodePoly(encodedString);
+            Polyline line = googleMap.addPolyline(new PolylineOptions()
+                    .addAll(list)
+                    .width(12)
+                    .color(Color.parseColor("#05b1fb"))//Google maps blue color
+                    .geodesic(true)
+            );
+           /*
+           for(int z = 0; z<list.size()-1;z++){
+                LatLng src= list.get(z);
+                LatLng dest= list.get(z+1);
+                Polyline line = mMap.addPolyline(new PolylineOptions()
+                .add(new LatLng(src.latitude, src.longitude), new LatLng(dest.latitude,   dest.longitude))
+                .width(2)
+                .color(Color.BLUE).geodesic(true));
+            }
+           */
+        }
+        catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private List<LatLng> decodePoly(String encoded) {
+
+        List<LatLng> poly = new ArrayList<LatLng>();
+        int index = 0, len = encoded.length();
+        int lat = 0, lng = 0;
+
+        while (index < len) {
+            int b, shift = 0, result = 0;
+            do {
+                b = encoded.charAt(index++) - 63;
+                result |= (b & 0x1f) << shift;
+                shift += 5;
+            } while (b >= 0x20);
+            int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+            lat += dlat;
+
+            shift = 0;
+            result = 0;
+            do {
+                b = encoded.charAt(index++) - 63;
+                result |= (b & 0x1f) << shift;
+                shift += 5;
+            } while (b >= 0x20);
+            int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+            lng += dlng;
+
+            LatLng p = new LatLng( (((double) lat / 1E5)),
+                    (((double) lng / 1E5) ));
+            poly.add(p);
+        }
+
+        return poly;
+    }
+
+    private class connectAsyncTask extends AsyncTask<Void, Void, String>{
+        private ProgressDialog progressDialog;
+        String url;
+        connectAsyncTask(String urlPass){
+            url = urlPass;
+        }
+        @Override
+        protected void onPreExecute() {
+            // TODO Auto-generated method stub
+            super.onPreExecute();
+            progressDialog = new ProgressDialog(MapsActivity.this);
+            progressDialog.setMessage("Fetching route, Please wait...");
+            progressDialog.setIndeterminate(true);
+            progressDialog.show();
+        }
+        @Override
+        protected String doInBackground(Void... params) {
+            JSONParser jParser = new JSONParser();
+            String json = jParser.getJSONFromUrlStack(url);
+            return json;
+        }
+        @Override
+        protected void onPostExecute(String result) {
+            super.onPostExecute(result);
+            progressDialog.hide();
+            if(result!=null){
+                drawPath(result);
+            }
+        }
+    }
 }

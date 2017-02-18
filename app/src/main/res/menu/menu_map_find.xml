@@ -41,4 +41,10 @@
         xmlparser:showAsAction="always"
         />
 
+    <item
+        android:id="@+id/action_planning_route_direction_google_api"
+        android:title="Trasa Google API"
+        xmlparser:showAsAction="always"
+        />
+
 </menu>
