@@ -147,6 +147,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private static float GEOFENCE_RADIUS = 100.0f; // in meters
     private PendingIntent geoFencePendingIntent;
     private final int GEOFENCE_REQ_CODE = 0;
+    private Circle geoFenceLimits;
     private int filterFind;
     private int filterType;
     private static final int FILTER_ALL = 0;
@@ -184,6 +185,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         //System.out.println("FilterType: " + filterType);
     }
 
+    /*
     @Override
     public void onPause() {
         super.onPause();
@@ -191,6 +193,21 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         if (mGoogleApiClient != null) {
             LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
         }
+    }
+    */
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if(mGoogleApiClient!=null)
+            mGoogleApiClient.connect();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        if(mGoogleApiClient!=null)
+            mGoogleApiClient.disconnect();
     }
 
     @Override
@@ -527,11 +544,12 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         googleMap.setOnPolylineClickListener(new GoogleMap.OnPolylineClickListener() {
             @Override
             public void onPolylineClick(Polyline polyline) {
-                if(isGoogleDirectionApi)
-                    viewDistance.setText("Celková vzdálenost: " + String.format("%.3f", totalDistance) + " km" + "\n"
-                            +   "Režim: " + navigateMode);
-                else
-                    viewDistance.setText("Celková vzdálenost: " + String.format("%.3f", totalDistance) + " km");
+                if(isGoogleDirectionApi) {
+                    viewDistance.setText("Celková vzdálenost: " + String.format("%.3f", totalDistance).replace(',', '.') + " km" + "\n"
+                            + "Režim: " + navigateMode);
+                }else {
+                    viewDistance.setText("Celková vzdálenost: " + String.format("%.3f", totalDistance).replace(',', '.') + " km");
+                }
                 isTraceClicked = true;
             }
         });
@@ -682,6 +700,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public boolean onMyLocationButtonClick() {
         isMoving = false;
+        isMarkerFollow = false;
         return false;
     }
 
@@ -692,15 +711,22 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
         CameraUpdate loc;
         if (previousZoomLevel < 0 && !isMoving) {
-            previousZoomLevel = ZOOM_BASE_VALUE;
-            loc = CameraUpdateFactory.newLatLngZoom(latLng, previousZoomLevel);
+            System.out.println("START ZOOMING");
+            loc = CameraUpdateFactory.newLatLngZoom(latLng, ZOOM_BASE_VALUE);
             googleMap.animateCamera(loc);
+            if(googleMap.getCameraPosition().zoom == ZOOM_BASE_VALUE){
+                previousZoomLevel = ZOOM_BASE_VALUE;
+            }
         } else {
-            if (!isMoving) {
-                loc = CameraUpdateFactory.newLatLngZoom(latLng, previousZoomLevel);
-                googleMap.animateCamera(loc);
-            } else {
-                googleMap.animateCamera(CameraUpdateFactory.zoomTo(previousZoomLevel));
+            if(!isMarkerFollow) {
+                if (!isMoving) {
+                    System.out.println("no start - !isMoving");
+                    loc = CameraUpdateFactory.newLatLngZoom(latLng, previousZoomLevel);
+                    googleMap.animateCamera(loc);
+                } else {
+                    System.out.println("no start - isMoving");
+                    googleMap.animateCamera(CameraUpdateFactory.zoomTo(previousZoomLevel));
+                }
             }
         }
 
@@ -1095,9 +1121,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private void showRouteDialog(final Marker marker) {
         String message;
         if(isGoogleDirectionApi){
-            message = "Pocet bodu trasy:       " + routePoints.size() + "\n"
+            message = "Počet bodů trasy:       " + routePoints.size() + "\n"
                     + "\n"
-                    + "Upozornění \n"
+                    + "Upozornění: \n"
                     + "K funkčnosti jsou vyžadována data! Trasa je vytvářena za podpory Google Direction API.";
         } else {
             message = "Pocet bodu trasy:       " + routePoints.size();
@@ -1105,7 +1131,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         new AlertDialog.Builder(this, R.style.YourAlertDialogTheme)
                 .setTitle("Trasa")
-                .setIcon(R.drawable.ico_geo)
+                .setIcon(R.drawable.ico_route)
                 .setMessage(message)
                 .setNegativeButton("Zavřít", new DialogInterface.OnClickListener() {
 
@@ -1113,7 +1139,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         Toast.makeText(getApplicationContext(), "Dialog close!", Toast.LENGTH_SHORT).show();
                     }
                 })
-                .setPositiveButton("Route", new DialogInterface.OnClickListener() {
+                .setPositiveButton("Vytvořit", new DialogInterface.OnClickListener() {
 
                     public void onClick(DialogInterface dialog, int whichButton) {
                         if(!isGoogleDirectionApi) {
@@ -1144,7 +1170,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                             }
                         }
                     }
-                }).setNeutralButton("Zrusit", new DialogInterface.OnClickListener() {
+                }).setNeutralButton("Zrušit", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 isShortestWayEnabled = false;
@@ -1415,15 +1441,19 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         followCache = cache;
         isMarkerFollow = true;
         viewDistance.setVisibility(View.VISIBLE);
-        LatLng destinationCoord = new LatLng(followCache.getLat(), followCache.getLon());
+        LatLng destinationCoord = new LatLng(cache.getLat(), cache.getLon());
         if(mLastLocation != null){
             LatLng myLocLatLon = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
             viewDistance.setText("Vzdálenost: " + Utils.CalculationByDistance(myLocLatLon, destinationCoord) + " km");
         }
+        System.out.println("Dest coord cache: " + destinationCoord.toString());
         CameraUpdate loc = CameraUpdateFactory.newLatLngZoom(destinationCoord, previousZoomLevel);
         googleMap.animateCamera(loc);
+        System.out.println("Camera target: " + googleMap.getCameraPosition().target);
 
-        planningShortestRoute(markers);
+        if(markers.size()>1)
+            planningShortestRoute(markers);
+
         try {
             if (isGeofencingEnabled) {
                 if (mGoogleApiClient.isConnected())
@@ -1538,6 +1568,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
             if (isShortestWayEnabled) {
                 Log.i(TAG, "isShortestWayEnabled");
+                this.marker = marker;
                 marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_select_orange));
                 marker.setSnippet("Click for ROUTE options!");
                 if (routePoints.contains(marker)) {
@@ -1622,178 +1653,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     }
 
-    private void planningShortestRouteGoogleApiDirection(ArrayList<Marker> routePoints) {
-        Log.i(TAG, "planningShortestRouteGoogleApiDirection");
-        //TODO get distances matrix
-        int matrixSize = routePoints.size();
-        double[][] matrix = new double[matrixSize][matrixSize];
-        for (int i = 0; i < matrixSize; i++) {
-            for (int j = 0; j < matrixSize; j++) {
-                matrix[i][j] = Utils.CalculationByDistance(routePoints.get(i).getPosition(), routePoints.get(j).getPosition());
-            }
-        }
-
-        //TODO PLANNING ROUTE
-        ArrayList<Marker> shortestRoutePoints = new ArrayList<>();
-        try {
-            shortestRoutePoints.add(routePoints.get(0));
-            pomIndex = 0;
-            while (shortestRoutePoints.size() != routePoints.size()) {
-                double min = 0;
-                int pomJ;
-                int i = pomIndex;
-                for (int j = 0; j < matrixSize; j++) {
-                    pomJ = 0;
-                    while (min == 0) {
-                        if (!shortestRoutePoints.contains(routePoints.get(pomJ))) {
-                            min = matrix[i][pomJ];
-                            pomIndex = pomJ;
-                        }
-                        if (min == 0)
-                            pomJ += 1;
-                    }
-                    if (matrix[i][j] <= min && matrix[pomIndex][j] != 0) {
-                        if (!shortestRoutePoints.contains(routePoints.get(j))) {
-                            min = matrix[i][j];
-                            pomIndex = j;
-                        }
-                    }
-                }
-                shortestRoutePoints.add(routePoints.get(pomIndex));
-            }
-
-            if (polylines == null) {
-                polylines = new ArrayList<>();
-            } else {
-                for (Polyline line : polylines) {
-                    line.remove();
-                }
-            }
-
-            //TODO DRAWLINE
-            totalDistance = 0;
-            for (int i = 0; i < shortestRoutePoints.size() - 1; i++) {
-                double sourceLat = shortestRoutePoints.get(i).getPosition().latitude;
-                double sourceLon = shortestRoutePoints.get(i).getPosition().longitude;
-                double destinationLat = shortestRoutePoints.get(i+1).getPosition().latitude;
-                double destinationLon = shortestRoutePoints.get(i+1).getPosition().longitude;
-                String strUrl = makeURL(sourceLat, sourceLon, destinationLat, destinationLon);
-                connectAsyncTask asyncTask = new connectAsyncTask(strUrl);
-                asyncTask.execute();
-            }
-
-
-            for (int i = 0; i < markers.size(); i++) {
-                markers.get(i).setSnippet("Klikni pro více detailů!");
-            }
-            recolorMarkers();
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-    }
-
-    private void planningShortestRoute(ArrayList<Marker> routePoints) {
-        Log.i(TAG, "planningShortestRoute");
-        //TODO get distances matrix
-        int matrixSize = routePoints.size();
-        double[][] matrix = new double[matrixSize][matrixSize];
-        for (int i = 0; i < matrixSize; i++) {
-            for (int j = 0; j < matrixSize; j++) {
-                matrix[i][j] = Utils.CalculationByDistance(routePoints.get(i).getPosition(), routePoints.get(j).getPosition());
-            }
-        }
-
-        //TODO display matrix and routePoints
-        for (int i = 0; i < matrixSize; i++) {
-            for (int j = 0; j < matrixSize; j++) {
-                System.out.print("\t" + matrix[i][j]);
-            }
-            System.out.println();
-        }
-        System.out.println("///////////////////////////////");
-        for (int i = 0; i < routePoints.size(); i++) {
-            System.out.println(routePoints.get(i).getTitle());
-        }
-        System.out.println("///////////////////////////////");
-
-
-        //TODO PLANNING ROUTE
-        ArrayList<Marker> shortestRoutePoints = new ArrayList<>();
-        totalDistance = 0;
-        try {
-            shortestRoutePoints.add(routePoints.get(0));
-            pomIndex = 0;
-            while (shortestRoutePoints.size() != routePoints.size()) {
-                double min = 0;
-                int pomJ;
-                int i = pomIndex;
-                for (int j = 0; j < matrixSize; j++) {
-                    pomJ = 0;
-                    while (min == 0) {
-                        if (!shortestRoutePoints.contains(routePoints.get(pomJ))) {
-                            min = matrix[i][pomJ];
-                            pomIndex = pomJ;
-                        }
-                        if (min == 0)
-                            pomJ += 1;
-                    }
-                    if (matrix[i][j] <= min && matrix[pomIndex][j] != 0) {
-                        if (!shortestRoutePoints.contains(routePoints.get(j))) {
-                            min = matrix[i][j];
-                            pomIndex = j;
-                        }
-                    }
-                }
-                totalDistance += min;
-                shortestRoutePoints.add(routePoints.get(pomIndex));
-            }
-
-            //TODO display shortest Route Points
-            for (int i = 0; i < shortestRoutePoints.size(); i++) {
-                System.out.println(shortestRoutePoints.get(i).getTitle());
-            }
-            viewDistance.setText("Celková vzdálenost: " + String.format("%.3f", totalDistance) + " km");
-
-
-            //TODO drawLine points between shortest Route Points
-            if (polylines == null) {
-                polylines = new ArrayList<>();
-            } else {
-                for (Polyline line : polylines) {
-                    line.remove();
-                }
-            }
-            for (int i = 0; i < shortestRoutePoints.size() - 1; i++) {
-                drawLine(shortestRoutePoints.get(i).getPosition(), shortestRoutePoints.get(i + 1).getPosition());
-            }
-            for (int i = 0; i < markers.size(); i++) {
-                markers.get(i).setSnippet("Klikni pro více detailů!");
-            }
-            recolorMarkers();
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-    }
-
-    public void drawLine(LatLng startLocation, LatLng endLocation) {
-        PolylineOptions polylineOptions = new PolylineOptions();
-        polylineOptions
-                .add(startLocation)
-                .add(endLocation)
-                .width(4)
-                .color(getResources().getColor(R.color.colorAccent))
-                .zIndex(0.49f)
-                .clickable(true)
-                .visible(true);
-        Polyline polyline = googleMap.addPolyline(polylineOptions);
-        polylines.add(polyline);
-
-    }
-
     private void recolorMarker(Marker marker) {
         if (marker.getTag() instanceof Cache) {
             Cache cache = (Cache) marker.getTag();
@@ -1831,6 +1690,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             recolorMarker(marker);
         }
     }
+
+
 
     /*       GEOFENCING          */
     private Geofence createGeofence(LatLng latLng, float radius, Marker marker) {
@@ -1919,8 +1780,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     }
 
-    private Circle geoFenceLimits;
-
     private void drawGeofence() {
         Log.d(TAG, "drawGeofence()");
 
@@ -1936,7 +1795,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         geoFenceLimits = googleMap.addCircle(circleOptions);
     }
 
-    // Start Geofence creation process
     private void startGeofence() {
         Log.i(TAG, "startGeofence()");
         if (marker != null) {
@@ -1965,24 +1823,197 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
 
+
+    /*       Planning shortest linear route          */
+
+    private void planningShortestRoute(ArrayList<Marker> routePoints) {
+        Log.i(TAG, "planningShortestRoute");
+        //get distances matrix
+        int matrixSize = routePoints.size();
+        double[][] matrix = new double[matrixSize][matrixSize];
+        for (int i = 0; i < matrixSize; i++) {
+            for (int j = 0; j < matrixSize; j++) {
+                matrix[i][j] = Utils.CalculationByDistance(routePoints.get(i).getPosition(), routePoints.get(j).getPosition());
+            }
+        }
+
+                //display matrix and routePoints
+                /*
+                for (int i = 0; i < matrixSize; i++) {
+                    for (int j = 0; j < matrixSize; j++) {
+                        System.out.print("\t" + matrix[i][j]);
+                    }
+                    System.out.println();
+                }
+                System.out.println("///////////////////////////////");
+                for (int i = 0; i < routePoints.size(); i++) {
+                    System.out.println(routePoints.get(i).getTitle());
+                }
+                System.out.println("///////////////////////////////");
+                */
+
+        //PLANNING ROUTE
+        ArrayList<Marker> shortestRoutePoints = new ArrayList<>();
+        totalDistance = 0;
+        try {
+            shortestRoutePoints.add(routePoints.get(0));
+            pomIndex = 0;
+            while (shortestRoutePoints.size() != routePoints.size()) {
+                double min = 0;
+                int pomJ;
+                int i = pomIndex;
+                for (int j = 0; j < matrixSize; j++) {
+                    pomJ = 0;
+                    while (min == 0) {
+                        if (!shortestRoutePoints.contains(routePoints.get(pomJ))) {
+                            min = matrix[i][pomJ];
+                            pomIndex = pomJ;
+                        }
+                        if (min == 0)
+                            pomJ += 1;
+                    }
+                    if (matrix[i][j] <= min && matrix[pomIndex][j] != 0) {
+                        if (!shortestRoutePoints.contains(routePoints.get(j))) {
+                            min = matrix[i][j];
+                            pomIndex = j;
+                        }
+                    }
+                }
+                totalDistance += min;
+                shortestRoutePoints.add(routePoints.get(pomIndex));
+            }
+            viewDistance.setText("Celková vzdálenost: " + String.format("%.3f", totalDistance) + " km");
+
+                    //display shortest Route Points
+                    /*
+                    for (int i = 0; i < shortestRoutePoints.size(); i++) {
+                        System.out.println(shortestRoutePoints.get(i).getTitle());
+                    }
+                    */
+
+            //drawLine points between shortest Route Points, rewriting markers snipper, recolor markers
+            if (polylines == null) {
+                polylines = new ArrayList<>();
+            } else {
+                for (Polyline line : polylines) {
+                    line.remove();
+                }
+            }
+            for (int i = 0; i < shortestRoutePoints.size() - 1; i++) {
+                drawLine(shortestRoutePoints.get(i).getPosition(), shortestRoutePoints.get(i + 1).getPosition());
+            }
+            for (int i = 0; i < markers.size(); i++) {
+                markers.get(i).setSnippet("Klikni pro více detailů!");
+            }
+            recolorMarkers();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    public void drawLine(LatLng startLocation, LatLng endLocation) {
+        PolylineOptions polylineOptions = new PolylineOptions();
+        polylineOptions
+                .add(startLocation)
+                .add(endLocation)
+                .width(4)
+                .color(getResources().getColor(R.color.colorAccent))
+                .zIndex(0.49f)
+                .clickable(true)
+                .visible(true);
+        Polyline polyline = googleMap.addPolyline(polylineOptions);
+        polylines.add(polyline);
+    }
+
     /*       GOOGLE API DIRECTION - planning shortest route          */
+    private void planningShortestRouteGoogleApiDirection(ArrayList<Marker> routePoints) {
+        Log.i(TAG, "planningShortestRouteGoogleApiDirection");
+        //get distances matrix
+        int matrixSize = routePoints.size();
+        double[][] matrix = new double[matrixSize][matrixSize];
+        for (int i = 0; i < matrixSize; i++) {
+            for (int j = 0; j < matrixSize; j++) {
+                matrix[i][j] = Utils.CalculationByDistance(routePoints.get(i).getPosition(), routePoints.get(j).getPosition());
+            }
+        }
+
+        //PLANNING ROUTE
+        ArrayList<Marker> shortestRoutePoints = new ArrayList<>();
+        try {
+            shortestRoutePoints.add(routePoints.get(0));
+            pomIndex = 0;
+            while (shortestRoutePoints.size() != routePoints.size()) {
+                double min = 0;
+                int pomJ;
+                int i = pomIndex;
+                for (int j = 0; j < matrixSize; j++) {
+                    pomJ = 0;
+                    while (min == 0) {
+                        if (!shortestRoutePoints.contains(routePoints.get(pomJ))) {
+                            min = matrix[i][pomJ];
+                            pomIndex = pomJ;
+                        }
+                        if (min == 0)
+                            pomJ += 1;
+                    }
+                    if (matrix[i][j] <= min && matrix[pomIndex][j] != 0) {
+                        if (!shortestRoutePoints.contains(routePoints.get(j))) {
+                            min = matrix[i][j];
+                            pomIndex = j;
+                        }
+                    }
+                }
+                shortestRoutePoints.add(routePoints.get(pomIndex));
+            }
+
+            if (polylines == null) {
+                polylines = new ArrayList<>();
+            } else {
+                for (Polyline line : polylines) {
+                    line.remove();
+                }
+            }
+
+            //DRAWLINE
+            totalDistance = 0;
+            for (int i = 0; i < shortestRoutePoints.size() - 1; i++) {
+                double sourceLat = shortestRoutePoints.get(i).getPosition().latitude;
+                double sourceLon = shortestRoutePoints.get(i).getPosition().longitude;
+                double destinationLat = shortestRoutePoints.get(i+1).getPosition().latitude;
+                double destinationLon = shortestRoutePoints.get(i+1).getPosition().longitude;
+                String strUrl = makeURL(sourceLat, sourceLon, destinationLat, destinationLon);
+                connectAsyncTask asyncTask = new connectAsyncTask(strUrl);
+                asyncTask.execute();
+            }
+
+
+            for (int i = 0; i < markers.size(); i++) {
+                markers.get(i).setSnippet("Klikni pro více detailů!");
+            }
+            recolorMarkers();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+
     public String makeURL (double sourcelat, double sourcelog, double destlat, double destlog ){
-        StringBuilder urlString = new StringBuilder();
-        urlString.append("https://maps.googleapis.com/maps/api/directions/json");
-        urlString.append("?origin=");// from
-        urlString.append(Double.toString(sourcelat));
-        urlString.append(",");
-        urlString.append(Double.toString(sourcelog));
-        urlString.append("&destination=");// to
-        urlString.append(Double.toString(destlat));
-        urlString.append(",");
-        urlString.append(Double.toString(destlog));
-        urlString.append("&sensor=false");
-        urlString.append("&mode="+navigateMode);
-        urlString.append("&alternatives=true");
-        urlString.append("&key=AIzaSyAb43dYdHwWWcOFU7hVzVhU9OVt0w5mHgs");
-        //System.out.println(urlString);
-        return urlString.toString();
+        return  "https://maps.googleapis.com/maps/api/directions/json" +
+                "?origin=" +// from
+                Double.toString(sourcelat) +
+                "," +
+                Double.toString(sourcelog) +
+                "&destination=" +// to
+                Double.toString(destlat) +
+                "," +
+                Double.toString(destlog) +
+                "&sensor=false" +
+                "&mode=" + navigateMode +
+                "&alternatives=true" +
+                "&key=AIzaSyAb43dYdHwWWcOFU7hVzVhU9OVt0w5mHgs";
     }
 
     private class connectAsyncTask extends AsyncTask<Void, Void, String>{
@@ -2003,8 +2034,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         @Override
         protected String doInBackground(Void... params) {
             JSONParser jParser = new JSONParser();
-            String json = jParser.getJSONFromUrlStack(url);
-            return json;
+            return jParser.getJSONFromUrlStack(url);
         }
         @Override
         protected void onPostExecute(String result) {
@@ -2015,11 +2045,10 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 viewDistance.setText("Celková vzdálenost: " + String.format("%.3f", totalDistance).replace(',', '.')
                         + " km" + "\n"
                         + "Režim: " + navigateMode);
-
             }
         }
 
-        public void drawPath(String  result) {
+        private void drawPath(String  result) {
             try {
                 //Tranform the string into a json object
                 final JSONObject json = new JSONObject(result);
@@ -2054,7 +2083,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         private List<LatLng> decodePoly(String encoded) {
 
-            List<LatLng> poly = new ArrayList<LatLng>();
+            List<LatLng> poly = new ArrayList<>();
             int index = 0, len = encoded.length();
             int lat = 0, lng = 0;
 
