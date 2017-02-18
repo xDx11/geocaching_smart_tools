@@ -324,11 +324,22 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 showClearMapDialog();
                 return true;
             case android.R.id.home:
-                NavUtils.navigateUpFromSameTask(this);
+                if(isTraceCreated || isShortestWayEnabled){
+                    findCaches(filterFind, filterType);
+                } else {
+                    NavUtils.navigateUpFromSameTask(this);
+                }
                 return true;
-
         }
         return true;
+    }
+
+    public void onBackPressed(){
+        if(isTraceCreated || isShortestWayEnabled){
+            findCaches(filterFind, filterType);
+        } else {
+            NavUtils.navigateUpFromSameTask(this);
+        }
     }
 
     public void showMenuFindOptions(View v) {
@@ -427,9 +438,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 isShortestWayEnabled = true;
                 routePoints = new ArrayList<>();
                 viewDistance.setVisibility(View.VISIBLE);
-                viewDistance.setText("Seznam bodu trasy: \n" +
-                        "Nastavite zvolenim ukazatelu na mape."
-                );
+                viewDistance.setText("Zvolte prosím počáteční bod trasy: ");
                 if (isGeofencingEnabled) {
                     stopGeofence();
                 }
@@ -443,9 +452,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 isGoogleDirectionApi = true;
                 routePoints = new ArrayList<>();
                 viewDistance.setVisibility(View.VISIBLE);
-                viewDistance.setText("Seznam bodu trasy: \n" +
-                        "Nastavite zvolenim ukazatelu na mape."
-                );
+                viewDistance.setText("Zvolte prosím počáteční bod trasy: ");
                 if (isGeofencingEnabled) {
                     stopGeofence();
                 }
@@ -511,6 +518,14 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         googleMap.setOnMyLocationButtonClickListener(this);
         googleMap.setOnInfoWindowClickListener(this);
         googleMap.setOnMarkerClickListener(this);
+
+        googleMap.setOnPolylineClickListener(new GoogleMap.OnPolylineClickListener() {
+            @Override
+            public void onPolylineClick(Polyline polyline) {
+                viewDistance.setText("Celková vzdálenost: " + String.format("%.3f", totalDistance) + " km");
+                isTraceClicked = true;
+            }
+        });
     }
 
     public void initializeUiSettings() {
@@ -1068,11 +1083,21 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 .setNegativeButton(android.R.string.no, null).show();
     }
 
-    private void showTraceDialog(final Marker marker) {
+    private void showRouteDialog(final Marker marker) {
+        String message;
+        if(isGoogleDirectionApi){
+            message = "Pocet bodu trasy:       " + routePoints.size() + "\n"
+                    + "\n"
+                    + "Upozornění \n"
+                    + "K funkčnosti jsou vyžadována data! Trasa je vytvářena za podpory Google Direction API.";
+        } else {
+            message = "Pocet bodu trasy:       " + routePoints.size();
+        }
+
         new AlertDialog.Builder(this, R.style.YourAlertDialogTheme)
                 .setTitle("Trasa")
                 .setIcon(R.drawable.ico_geo)
-                .setMessage("Pocet bodu trasy:       " + routePoints.size())
+                .setMessage(message)
                 .setNegativeButton("Zavřít", new DialogInterface.OnClickListener() {
 
                     public void onClick(DialogInterface dialog, int whichButton) {
@@ -1344,9 +1369,11 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         followCache = cache;
         isMarkerFollow = true;
         viewDistance.setVisibility(View.VISIBLE);
-        LatLng myLocLatLon = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
         LatLng destinationCoord = new LatLng(followCache.getLat(), followCache.getLon());
-        viewDistance.setText("Vzdálenost: " + Utils.CalculationByDistance(myLocLatLon, destinationCoord) + " km");
+        if(mLastLocation != null){
+            LatLng myLocLatLon = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
+            viewDistance.setText("Vzdálenost: " + Utils.CalculationByDistance(myLocLatLon, destinationCoord) + " km");
+        }
         CameraUpdate loc = CameraUpdateFactory.newLatLngZoom(destinationCoord, previousZoomLevel);
         googleMap.animateCamera(loc);
 
@@ -1372,6 +1399,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         viewDistance.setVisibility(View.INVISIBLE);
         isMarkerFollow = false;
         isTraceCreated = false;
+        isShortestWayEnabled = false;
+        isGoogleDirectionApi = false;
         if (markers == null) {
             markers = new ArrayList<>();
         } else {
@@ -1472,7 +1501,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     viewDistance.setVisibility(View.VISIBLE);
                     String desc = "Seznam bodu trasy: \n";
                     for (int i = 0; i < routePoints.size(); i++) {
-                        desc = desc + routePoints.get(i).getTitle() + " \n";
+                        desc = desc + " \n" + routePoints.get(i).getTitle() ;
                     }
                     viewDistance.setText(desc);
                 } else {
@@ -1485,8 +1514,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     }
                     viewDistance.setText(desc);
                 }
-
-
             } else {
                 Log.i(TAG, "shortestWayDisabled");
                 this.marker = marker;
@@ -1533,7 +1560,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     public void onInfoWindowClick(Marker marker) {
         try {
             if (isShortestWayEnabled) {
-                showTraceDialog(marker);
+                showRouteDialog(marker);
             } else {
                 if (marker.getTag() instanceof Cache) {
                     Cache cache = (Cache) marker.getTag();
@@ -1562,7 +1589,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         //TODO PLANNING ROUTE
         ArrayList<Marker> shortestRoutePoints = new ArrayList<>();
-        totalDistance = 0;
         try {
             shortestRoutePoints.add(routePoints.get(0));
             pomIndex = 0;
@@ -1587,13 +1613,19 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         }
                     }
                 }
-                totalDistance += min;
                 shortestRoutePoints.add(routePoints.get(pomIndex));
             }
 
-
+            if (polylines == null) {
+                polylines = new ArrayList<>();
+            } else {
+                for (Polyline line : polylines) {
+                    line.remove();
+                }
+            }
 
             //TODO DRAWLINE
+            totalDistance = 0;
             for (int i = 0; i < shortestRoutePoints.size() - 1; i++) {
                 double sourceLat = shortestRoutePoints.get(i).getPosition().latitude;
                 double sourceLon = shortestRoutePoints.get(i).getPosition().longitude;
@@ -1706,19 +1738,14 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         polylineOptions
                 .add(startLocation)
                 .add(endLocation)
-                .color(R.color.colorAccent)
+                .width(4)
+                .color(getResources().getColor(R.color.colorAccent))
                 .zIndex(0.49f)
                 .clickable(true)
                 .visible(true);
         Polyline polyline = googleMap.addPolyline(polylineOptions);
         polylines.add(polyline);
-        googleMap.setOnPolylineClickListener(new GoogleMap.OnPolylineClickListener() {
-            @Override
-            public void onPolylineClick(Polyline polyline) {
-                viewDistance.setText("Celková vzdálenost: " + String.format("%.3f", totalDistance) + " km");
-                isTraceClicked = true;
-            }
-        });
+
     }
 
     private void recolorMarker(Marker marker) {
@@ -1759,6 +1786,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     }
 
+    /*       GEOFENCING          */
     private Geofence createGeofence(LatLng latLng, float radius, Marker marker) {
         Log.d(TAG, "createGeofence");
         if (marker.getTag() instanceof Cache) {
@@ -1855,8 +1883,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         CircleOptions circleOptions = new CircleOptions()
                 .center(marker.getPosition())
-                .strokeColor(Color.argb(50, 70, 70, 70))
-                .fillColor(Color.argb(100, 150, 150, 150))
+                .strokeColor(getResources().getColor(R.color.colorAccent))
+                .strokeWidth(3)
+                .fillColor(Color.argb(60, 150, 150, 150))
                 .radius(GEOFENCE_RADIUS);
         geoFenceLimits = googleMap.addCircle(circleOptions);
     }
@@ -1890,7 +1919,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
 
-
+    /*       GOOGLE API DIRECTION - planning shortest route          */
     public String makeURL (double sourcelat, double sourcelog, double destlat, double destlog ){
         StringBuilder urlString = new StringBuilder();
         urlString.append("https://maps.googleapis.com/maps/api/directions/json");
@@ -1906,71 +1935,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         urlString.append("&key=AIzaSyAb43dYdHwWWcOFU7hVzVhU9OVt0w5mHgs");
         //System.out.println(urlString);
         return urlString.toString();
-    }
-
-    public void drawPath(String  result) {
-        try {
-            //Tranform the string into a json object
-            final JSONObject json = new JSONObject(result);
-            JSONArray routeArray = json.getJSONArray("routes");
-            JSONObject routes = routeArray.getJSONObject(0);
-            JSONObject overviewPolylines = routes.getJSONObject("overview_polyline");
-            String encodedString = overviewPolylines.getString("points");
-            List<LatLng> list = decodePoly(encodedString);
-            Polyline line = googleMap.addPolyline(new PolylineOptions()
-                    .addAll(list)
-                    .width(12)
-                    .color(Color.parseColor("#05b1fb"))//Google maps blue color
-                    .geodesic(true)
-            );
-           /*
-           for(int z = 0; z<list.size()-1;z++){
-                LatLng src= list.get(z);
-                LatLng dest= list.get(z+1);
-                Polyline line = mMap.addPolyline(new PolylineOptions()
-                .add(new LatLng(src.latitude, src.longitude), new LatLng(dest.latitude,   dest.longitude))
-                .width(2)
-                .color(Color.BLUE).geodesic(true));
-            }
-           */
-        }
-        catch (JSONException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private List<LatLng> decodePoly(String encoded) {
-
-        List<LatLng> poly = new ArrayList<LatLng>();
-        int index = 0, len = encoded.length();
-        int lat = 0, lng = 0;
-
-        while (index < len) {
-            int b, shift = 0, result = 0;
-            do {
-                b = encoded.charAt(index++) - 63;
-                result |= (b & 0x1f) << shift;
-                shift += 5;
-            } while (b >= 0x20);
-            int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
-            lat += dlat;
-
-            shift = 0;
-            result = 0;
-            do {
-                b = encoded.charAt(index++) - 63;
-                result |= (b & 0x1f) << shift;
-                shift += 5;
-            } while (b >= 0x20);
-            int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
-            lng += dlng;
-
-            LatLng p = new LatLng( (((double) lat / 1E5)),
-                    (((double) lng / 1E5) ));
-            poly.add(p);
-        }
-
-        return poly;
     }
 
     private class connectAsyncTask extends AsyncTask<Void, Void, String>{
@@ -2000,7 +1964,75 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             progressDialog.hide();
             if(result!=null){
                 drawPath(result);
+                viewDistance.setText("Celková vzdálenost: " + String.format("%.3f", totalDistance).replace(',', '.') + " km");
             }
+        }
+
+        public void drawPath(String  result) {
+            try {
+                //Tranform the string into a json object
+                final JSONObject json = new JSONObject(result);
+                JSONArray routeArray = json.getJSONArray("routes");
+                JSONObject routes = routeArray.getJSONObject(0);
+                JSONObject overviewPolylines = routes.getJSONObject("overview_polyline");
+                String encodedString = overviewPolylines.getString("points");
+                List<LatLng> list = decodePoly(encodedString);
+                Polyline line = googleMap.addPolyline(new PolylineOptions()
+                        .addAll(list)
+                        .width(4)
+                        //.color(Color.parseColor("#05b1fb"))//Google maps blue color
+                        .color(getResources().getColor(R.color.colorAccent))
+                        .clickable(true)
+                        .geodesic(true)
+                );
+                polylines.add(line);
+
+                //get distance route
+                JSONArray legs = routes.getJSONArray("legs");
+                JSONObject steps = legs.getJSONObject(0);
+                JSONObject distance = steps.getJSONObject("distance");
+                Log.d("Distance", distance.toString());
+                double dist = Double.parseDouble(distance.getString("text").replaceAll("[^\\.0123456789]","") );
+                totalDistance += dist;
+
+            }
+            catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+
+        private List<LatLng> decodePoly(String encoded) {
+
+            List<LatLng> poly = new ArrayList<LatLng>();
+            int index = 0, len = encoded.length();
+            int lat = 0, lng = 0;
+
+            while (index < len) {
+                int b, shift = 0, result = 0;
+                do {
+                    b = encoded.charAt(index++) - 63;
+                    result |= (b & 0x1f) << shift;
+                    shift += 5;
+                } while (b >= 0x20);
+                int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+                lat += dlat;
+
+                shift = 0;
+                result = 0;
+                do {
+                    b = encoded.charAt(index++) - 63;
+                    result |= (b & 0x1f) << shift;
+                    shift += 5;
+                } while (b >= 0x20);
+                int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+                lng += dlng;
+
+                LatLng p = new LatLng( (((double) lat / 1E5)),
+                        (((double) lng / 1E5) ));
+                poly.add(p);
+            }
+
+            return poly;
         }
     }
 }

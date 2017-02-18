@@ -183,7 +183,7 @@ public class Fragment_Detail_Cache extends Fragment {
             imageType.setBackgroundResource(R.drawable.traditional_cache);
         } else if (cache.getType().contains("Multi")){
             imageType.setBackgroundResource(R.drawable.multi_cache);
-        } else if (cache.getType().contains("Mystery")){
+        } else if (cache.getType().contains("Mystery") || cache.getType().contains("Unknown")){
             imageType.setBackgroundResource(R.drawable.mystery_cache);
         }
 

@@ -375,9 +375,9 @@ public class Fragment_Edit_Cache extends Fragment {
         } else if (id == rbMulti.getId()) {
             return rbMulti.getText().toString();
         } else if (id == rbMystery.getId()) {
-            return rbMystery.getText().toString();
+            return "Unknown Cache";
         } else {
-            return null;
+            return "Unknown Cache";
         }
     }
 
@@ -405,7 +405,9 @@ public class Fragment_Edit_Cache extends Fragment {
             rb_group_type.check(rbTraditional.getId());
         } else if (value.contains("Multi")) {
             rb_group_type.check(rbMulti.getId());
-        } else if (value.contains("Mystery")) {
+        } else if (value.contains("Mystery") || value.contains("Unknown")) {
+            rb_group_type.check(rbMystery.getId());
+        } else {
             rb_group_type.check(rbMystery.getId());
         }
     }

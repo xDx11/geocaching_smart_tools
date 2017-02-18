@@ -12,14 +12,14 @@
         />
 
     <item
-        android:id="@+id/action_find_address"
-        android:title="Hledej adresu"
+        android:id="@+id/action_filter_find_caches"
+        android:title="Hledej keše"
         xmlparser:showAsAction="always"
         />
 
     <item
-        android:id="@+id/action_filter_find_caches"
-        android:title="Filtr: Hledaní keší"
+        android:id="@+id/action_find_address"
+        android:title="Hledej adresu"
         xmlparser:showAsAction="always"
         />
 

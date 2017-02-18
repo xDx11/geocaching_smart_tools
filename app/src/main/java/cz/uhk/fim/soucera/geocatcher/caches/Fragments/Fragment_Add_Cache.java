@@ -311,7 +311,7 @@ public class Fragment_Add_Cache extends Fragment {
         } else if (id == rbMystery.getId()){
             return "Unknown Cache";
         } else {
-            return null;
+            return "Unknown Cache";
         }
     }
 
