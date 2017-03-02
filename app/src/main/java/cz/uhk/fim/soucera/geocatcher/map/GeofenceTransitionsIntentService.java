@@ -51,8 +51,8 @@ public class GeofenceTransitionsIntentService extends IntentService {
         // Retrieve GeofenceTrasition
         int geoFenceTransition = geofencingEvent.getGeofenceTransition();
         // Check if the transition type
-        if ( geoFenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER ||
-                geoFenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT ) {
+        if ( geoFenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER ) {
+             //   || geoFenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT
             // Get the geofence that were triggered
             List<Geofence> triggeringGeofences = geofencingEvent.getTriggeringGeofences();
             // Create a detail message with Geofences received
@@ -73,8 +73,8 @@ public class GeofenceTransitionsIntentService extends IntentService {
         String status = null;
         if ( geoFenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER )
             status = "Entering ";
-        else if ( geoFenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT )
-            status = "Exiting ";
+        //else if ( geoFenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT )
+        //    status = "Exiting ";
         return status + TextUtils.join( ", ", triggeringGeofencesList);
     }
 
@@ -90,15 +90,6 @@ public class GeofenceTransitionsIntentService extends IntentService {
                         resultIntent,
                         PendingIntent.FLAG_UPDATE_CURRENT
                 );
-        /*
-        // Intent to start the main Activity
-        Intent notificationIntent = MainActivity.makeNotificationIntent(getApplicationContext(), msg);
-
-        TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
-        stackBuilder.addParentStack(MainActivity.class);
-        stackBuilder.addNextIntent(notificationIntent);
-        PendingIntent notificationPendingIntent = stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
-        */
 
         // Creating and sending Notification
         NotificationManager notificatioMng = (NotificationManager) getSystemService( Context.NOTIFICATION_SERVICE );

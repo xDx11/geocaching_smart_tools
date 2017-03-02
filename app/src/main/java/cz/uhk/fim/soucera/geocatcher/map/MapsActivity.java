@@ -121,7 +121,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private static final CharSequence[] GEOFENCE_RADIUS_ITEMS = {"50", "100", "150", "300"};
     private static final CharSequence[] CACHES_TYPE_ITEMS = {"All", "Traditional", "Multi", "Mystery"};
     private static final CharSequence[] FILTER_FIND_ITEMS = {"Všechny keše", "Nalezené keše", "Nenalezené keše"};
-    private static final CharSequence[] NAVIGATE_TYPE_ITEMS = {"Driving", "Walking", "Bicycling"};
+    private static final CharSequence[] NAVIGATE_TYPE_ITEMS = {"Auto", "Chůze", "Kolo"};
     private static final int NAVITATE_MODE_DRIVING = 0;
     private static final int NAVITATE_MODE_WALKING = 1;
     private static final int NAVITATE_MODE_BICYCLING = 2;
@@ -1192,12 +1192,12 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private void showNavigationTypeDialog() {
         Log.i(TAG, "ShowNavigationTypeDialog");
         final String fDialogTitle = "Typ navigace trasy: ";
-        int checkItemNavigateType = 0;
+        //int checkItemNavigateType = 0;
         AlertDialog.Builder builder = new AlertDialog.Builder(this, R.style.YourAlertDialogTheme);
         builder.setTitle(fDialogTitle);
         builder.setSingleChoiceItems(
                 NAVIGATE_TYPE_ITEMS,
-                checkItemNavigateType,
+                -1,
                 new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int item) {
                         switch (item) {
@@ -1231,7 +1231,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         dialog.dismiss();
                     }
                 }
-        ).setNegativeButton("Zrušit", new DialogInterface.OnClickListener() {
+        ).setNeutralButton("Zrušit", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
 
@@ -1803,6 +1803,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private void startGeofence() {
         Log.i(TAG, "startGeofence()");
         if (marker != null) {
+            stopGeofence();
             Geofence geofence = createGeofence(marker.getPosition(), GEOFENCE_RADIUS, marker);
             Log.i(TAG, "startGeofence().createGeofence");
             GeofencingRequest geofenceRequest = createGeofenceRequest(geofence);
