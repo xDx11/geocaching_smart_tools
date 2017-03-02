@@ -26,9 +26,9 @@ import cz.uhk.fim.soucera.geocatcher.caches.MainCachesActivity;
 import cz.uhk.fim.soucera.geocatcher.features.CompassActivity;
 import cz.uhk.fim.soucera.geocatcher.features.FlashActivity;
 import cz.uhk.fim.soucera.geocatcher.imports.GPXparser;
-import cz.uhk.fim.soucera.geocatcher.imports.ImportLoadingAsync;
 import cz.uhk.fim.soucera.geocatcher.imports.ImportObject;
 import cz.uhk.fim.soucera.geocatcher.imports.LOCparser;
+import cz.uhk.fim.soucera.geocatcher.map.MapsActivity;
 import cz.uhk.fim.soucera.geocatcher.waypoints.Waypoint;
 
 public class MainActivity extends AppCompatActivity {

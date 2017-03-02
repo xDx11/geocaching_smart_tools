@@ -37,7 +37,7 @@ import java.util.Comparator;
 
 import cz.uhk.fim.soucera.geocatcher.Cache;
 import cz.uhk.fim.soucera.geocatcher.Caches_DB;
-import cz.uhk.fim.soucera.geocatcher.MapsActivity;
+import cz.uhk.fim.soucera.geocatcher.map.MapsActivity;
 import cz.uhk.fim.soucera.geocatcher.caches.EditCacheActivity;
 import cz.uhk.fim.soucera.geocatcher.R;
 import cz.uhk.fim.soucera.geocatcher.utils.Utils;

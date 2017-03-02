@@ -12,7 +12,7 @@ import android.view.MenuItem;
 import android.widget.Toast;
 
 import cz.uhk.fim.soucera.geocatcher.Cache;
-import cz.uhk.fim.soucera.geocatcher.MapsActivity;
+import cz.uhk.fim.soucera.geocatcher.map.MapsActivity;
 import cz.uhk.fim.soucera.geocatcher.caches.Fragments.Fragment_Detail_Cache;
 import cz.uhk.fim.soucera.geocatcher.Caches_DB;
 import cz.uhk.fim.soucera.geocatcher.R;

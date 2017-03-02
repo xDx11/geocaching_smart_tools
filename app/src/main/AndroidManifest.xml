@@ -63,9 +63,9 @@
         <activity
             android:name="cz.uhk.fim.soucera.geocatcher.caches.SelectCachesActivity"
             android:label="@string/mainCaches"
-            android:parentActivityName="cz.uhk.fim.soucera.geocatcher.MapsActivity" />
+            android:parentActivityName="cz.uhk.fim.soucera.geocatcher.map.MapsActivity" />
         <activity
-            android:name="cz.uhk.fim.soucera.geocatcher.MapsActivity"
+            android:name="cz.uhk.fim.soucera.geocatcher.map.MapsActivity"
             android:label="@string/title_activity_maps"
             android:parentActivityName="cz.uhk.fim.soucera.geocatcher.MainActivity"
             android:screenOrientation="portrait" />
@@ -82,16 +82,16 @@
         <activity
             android:name="cz.uhk.fim.soucera.geocatcher.caches.SelectDetailCacheActivity"
             android:label="@string/mainCaches"
-            android:parentActivityName="cz.uhk.fim.soucera.geocatcher.MapsActivity" />
+            android:parentActivityName="cz.uhk.fim.soucera.geocatcher.map.MapsActivity" />
         <activity
             android:name="cz.uhk.fim.soucera.geocatcher.features.PointToPointActivity"
             android:label="@string/title_activity_maps"
-            android:parentActivityName="cz.uhk.fim.soucera.geocatcher.MapsActivity" />
+            android:parentActivityName="cz.uhk.fim.soucera.geocatcher.map.MapsActivity" />
 
-        <service android:name="cz.uhk.fim.soucera.geocatcher.GeofenceTransitionsIntentService" />
+        <service android:name="cz.uhk.fim.soucera.geocatcher.map.GeofenceTransitionsIntentService" />
 
         <activity android:name="cz.uhk.fim.soucera.geocatcher.waypoints.DetailWptActivity"
-            android:parentActivityName="cz.uhk.fim.soucera.geocatcher.MapsActivity"
+            android:parentActivityName="cz.uhk.fim.soucera.geocatcher.map.MapsActivity"
             />
     </application>
 
