@@ -1,4 +1,4 @@
-package cz.uhk.fim.soucera.geocatcher;
+package cz.uhk.fim.soucera.geocatcher.map;
 
 import android.app.IntentService;
 import android.app.Notification;
@@ -17,6 +17,9 @@ import com.google.android.gms.location.GeofencingEvent;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import cz.uhk.fim.soucera.geocatcher.R;
+import cz.uhk.fim.soucera.geocatcher.map.MapsActivity;
 
 /**
  * Created by Radek Soucek on 25.01.2017.
