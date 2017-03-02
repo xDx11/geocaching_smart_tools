@@ -16,6 +16,7 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
 
 /**
  * Created by Radek Soucek on 17.02.2017.
@@ -90,6 +91,8 @@ public class JSONParser {
         } catch (ClientProtocolException e) {
             e.printStackTrace();
         } catch (IOException e) {
+            e.printStackTrace();
+        } catch (Exception e){
             e.printStackTrace();
         }
         try {

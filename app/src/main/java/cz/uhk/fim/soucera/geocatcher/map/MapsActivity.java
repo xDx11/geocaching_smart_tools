@@ -73,6 +73,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -117,8 +119,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     };
     private static final float ZOOM_BASE_VALUE = 14f;
     private static final int SELECT_CACHE_ACTIVITY = 1000;
-    private static final CharSequence[] MAP_TYPE_ITEMS = {"Normal", "Satellite", "Hybrid", "Terrain"};
-    private static final CharSequence[] GEOFENCE_RADIUS_ITEMS = {"50", "100", "150", "300"};
+    private static final CharSequence[] MAP_TYPE_ITEMS = {"Normální", "Satelitní", "Terénní", "Hybridní"};
+    private static final CharSequence[] GEOFENCE_RADIUS_ITEMS = {"50 metrů", "100 metrů", "150 metrů", "300 metrů"};
     private static final CharSequence[] CACHES_TYPE_ITEMS = {"All", "Traditional", "Multi", "Mystery"};
     private static final CharSequence[] FILTER_FIND_ITEMS = {"Všechny keše", "Nalezené keše", "Nenalezené keše"};
     private static final CharSequence[] NAVIGATE_TYPE_ITEMS = {"Auto", "Chůze", "Kolo"};
@@ -204,14 +206,14 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     protected void onResume() {
         super.onResume();
-        if(mGoogleApiClient!=null)
+        if (mGoogleApiClient != null)
             mGoogleApiClient.connect();
     }
 
     @Override
     public void onPause() {
         super.onPause();
-        if(mGoogleApiClient!=null)
+        if (mGoogleApiClient != null)
             mGoogleApiClient.disconnect();
     }
 
@@ -253,17 +255,17 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         }
 
-        if(mGoogleApiClient == null){
+        if (mGoogleApiClient == null) {
             System.out.println("ApiClient null");
             mGoogleApiClient = new GoogleApiClient.Builder(this)
                     .addConnectionCallbacks(this)
                     .addOnConnectionFailedListener(this)
                     .addApi(LocationServices.API)
                     .build();
-        } else if(!mGoogleApiClient.isConnected()){
+        } else if (!mGoogleApiClient.isConnected()) {
             System.out.println("Not connected - connecting");
             mGoogleApiClient.connect();
-        } else if(mGoogleApiClient.isConnected()){
+        } else if (mGoogleApiClient.isConnected()) {
             System.out.println("RECONNECT");
             mGoogleApiClient.reconnect();
         }
@@ -351,7 +353,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 showClearMapDialog();
                 return true;
             case android.R.id.home:
-                if(isTraceCreated || isShortestWayEnabled){
+                if (isTraceCreated || isShortestWayEnabled) {
                     findCaches(filterFind, filterType);
                 } else {
                     NavUtils.navigateUpFromSameTask(this);
@@ -361,8 +363,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         return true;
     }
 
-    public void onBackPressed(){
-        if(isTraceCreated || isShortestWayEnabled){
+    public void onBackPressed() {
+        if (isTraceCreated || isShortestWayEnabled) {
             findCaches(filterFind, filterType);
         } else {
             NavUtils.navigateUpFromSameTask(this);
@@ -460,7 +462,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             case R.id.action_planning_route:
                 Log.i(TAG, "MenuClick_track_route");
                 recolorMarkers();
-                if(marker!=null)
+                if (marker != null)
                     marker.hideInfoWindow();
                 isShortestWayEnabled = true;
                 routePoints = new ArrayList<>();
@@ -473,7 +475,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             case R.id.action_planning_route_direction_google_api:
                 Log.i(TAG, "MenuClick_track_route");
                 recolorMarkers();
-                if(marker!=null)
+                if (marker != null)
                     marker.hideInfoWindow();
                 isShortestWayEnabled = true;
                 isGoogleDirectionApi = true;
@@ -549,10 +551,10 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         googleMap.setOnPolylineClickListener(new GoogleMap.OnPolylineClickListener() {
             @Override
             public void onPolylineClick(Polyline polyline) {
-                if(isGoogleDirectionApi) {
+                if (isGoogleDirectionApi) {
                     viewDistance.setText("Celková vzdálenost: " + String.format("%.3f", totalDistance).replace(',', '.') + " km" + "\n"
                             + "Režim: " + navigateMode);
-                }else {
+                } else {
                     viewDistance.setText("Celková vzdálenost: " + String.format("%.3f", totalDistance).replace(',', '.') + " km");
                 }
                 isTraceClicked = true;
@@ -719,11 +721,11 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             System.out.println("START ZOOMING");
             loc = CameraUpdateFactory.newLatLngZoom(latLng, ZOOM_BASE_VALUE);
             googleMap.animateCamera(loc);
-            if(googleMap.getCameraPosition().zoom == ZOOM_BASE_VALUE){
+            if (googleMap.getCameraPosition().zoom == ZOOM_BASE_VALUE) {
                 previousZoomLevel = ZOOM_BASE_VALUE;
             }
         } else {
-            if(!isMarkerFollow) {
+            if (!isMarkerFollow) {
                 if (!isMoving) {
                     System.out.println("no start - !isMoving");
                     loc = CameraUpdateFactory.newLatLngZoom(latLng, previousZoomLevel);
@@ -1125,7 +1127,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private void showRouteDialog(final Marker marker) {
         String message;
-        if(isGoogleDirectionApi){
+        if (isGoogleDirectionApi) {
             message = "Počet bodů trasy:       " + routePoints.size() + "\n"
                     + "\n"
                     + "Upozornění: \n"
@@ -1147,7 +1149,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 .setPositiveButton("Vytvořit", new DialogInterface.OnClickListener() {
 
                     public void onClick(DialogInterface dialog, int whichButton) {
-                        if(!isGoogleDirectionApi) {
+                        if (!isGoogleDirectionApi) {
                             if (routePoints.size() >= 2) {
                                 planningRoute(ROUTE_MODE_LINEAR);
                                 isShortestWayEnabled = false;
@@ -1447,7 +1449,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         isMarkerFollow = true;
         viewDistance.setVisibility(View.VISIBLE);
         LatLng destinationCoord = new LatLng(cache.getLat(), cache.getLon());
-        if(mLastLocation != null){
+        if (mLastLocation != null) {
             LatLng myLocLatLon = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
             viewDistance.setText("Vzdálenost: " + Utils.CalculationByDistance(myLocLatLon, destinationCoord) + " km");
         }
@@ -1456,7 +1458,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         googleMap.animateCamera(loc);
         System.out.println("Camera target: " + googleMap.getCameraPosition().target);
 
-        if(markers.size()>1)
+        if (markers.size() > 1)
             planningRoute(ROUTE_MODE_API_DIRECTION);
 
         try {
@@ -1583,7 +1585,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     viewDistance.setVisibility(View.VISIBLE);
                     String desc = "Seznam bodu trasy: \n";
                     for (int i = 0; i < routePoints.size(); i++) {
-                        desc = desc + " \n" + routePoints.get(i).getTitle() ;
+                        desc = desc + " \n" + routePoints.get(i).getTitle();
                     }
                     viewDistance.setText(desc);
                 } else {
@@ -1697,7 +1699,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
 
-
     /*       GEOFENCING          */
     private Geofence createGeofence(LatLng latLng, float radius, Marker marker) {
         Log.d(TAG, "createGeofence");
@@ -1764,8 +1765,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         if (status.isSuccess()) {
             Log.i(TAG, "onResult: Status.isSuccess");
             if (isGeofencingEnabled) {
-                if(isShortestWayEnabled){
-                    if (geoFenceLimits != null){
+                if (isShortestWayEnabled) {
+                    if (geoFenceLimits != null) {
                         Log.i(TAG, "circleDraw: del");
                         geoFenceLimits.remove();
                     }
@@ -1774,7 +1775,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 }
 
             } else {
-                if (geoFenceLimits != null){
+                if (geoFenceLimits != null) {
                     Log.i(TAG, "circleDraw: del");
                     geoFenceLimits.remove();
                 }
@@ -1830,7 +1831,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     /*        PLANNING ROUTE         */
 
-    private void planningRoute(int mode){
+    private void planningRoute(int mode) {
         if (polylines == null) {
             polylines = new ArrayList<>();
         } else {
@@ -1840,9 +1841,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
         ArrayList<Marker> shortestRoutePoints;
         PlanningRoute planningRoute = new PlanningRoute();
-        switch(mode){
+        switch (mode) {
             case ROUTE_MODE_LINEAR:
-                shortestRoutePoints =  planningRoute.planningShortestRoute(routePoints);
+                shortestRoutePoints = planningRoute.planningShortestRoute(routePoints);
                 for (int i = 0; i < shortestRoutePoints.size() - 1; i++) {
                     PolylineOptions polylineOptions = new PolylineOptions();
                     polylineOptions
@@ -1860,6 +1861,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             case ROUTE_MODE_API_DIRECTION:
                 shortestRoutePoints = planningRoute.planningShortestRouteGoogleApiDirection(routePoints);
                 totalDistance = 0;
+                /*
                 for (int i = 0; i < shortestRoutePoints.size() - 1; i++) {
                     double sourceLat = shortestRoutePoints.get(i).getPosition().latitude;
                     double sourceLon = shortestRoutePoints.get(i).getPosition().longitude;
@@ -1868,6 +1870,15 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     String strUrl = makeURL(sourceLat, sourceLon, destinationLat, destinationLon);
                     connectAsyncTask asyncTask = new connectAsyncTask(strUrl);
                     asyncTask.execute();
+                }
+                */
+                try {
+                    String strUrl = makeURLwithWaypoint(shortestRoutePoints);
+                    System.out.println("strUrl: " + strUrl);
+                    connectAsyncTask asyncTask = new connectAsyncTask(strUrl);
+                    asyncTask.execute();
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
                 break;
             default:
@@ -1883,8 +1894,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         recolorMarkers();
     }
 
-    public String makeURL (double sourcelat, double sourcelog, double destlat, double destlog ){
-        return  "https://maps.googleapis.com/maps/api/directions/json" +
+    public String makeURL(double sourcelat, double sourcelog, double destlat, double destlog) {
+        return "https://maps.googleapis.com/maps/api/directions/json" +
                 "?origin=" +// from
                 Double.toString(sourcelat) +
                 "," +
@@ -1899,12 +1910,62 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 "&key=AIzaSyAb43dYdHwWWcOFU7hVzVhU9OVt0w5mHgs";
     }
 
+    public String makeURLwithWaypoint(ArrayList<Marker> routePoints) {
+        int size = routePoints.size() - 1;
+        String sourcelat = Double.toString(routePoints.get(0).getPosition().latitude);
+        String sourcelog = Double.toString(routePoints.get(0).getPosition().longitude);
+        String destlat = Double.toString(routePoints.get(size).getPosition().latitude);
+        String destlog = Double.toString(routePoints.get(size).getPosition().longitude);
+        StringBuilder urlString = new StringBuilder();
+        try {
+            urlString.append("https://maps.googleapis.com/maps/api/directions/json");
+
+            // from
+            urlString.append("?origin=");
+            urlString.append(URLEncoder.encode(sourcelat, "UTF-8"));
+            urlString.append(",");
+            urlString.append(URLEncoder.encode(sourcelog, "UTF-8"));
+
+            // to
+            urlString.append("&destination=");
+            urlString.append(URLEncoder.encode(destlat, "UTF-8"));
+            urlString.append(",");
+            urlString.append(URLEncoder.encode(destlog, "UTF-8"));
+
+            //Waypoints
+            urlString.append("&waypoints=");
+            urlString.append(URLEncoder.encode(Double.toString(routePoints.get(1).getPosition().latitude), "UTF-8"));
+            urlString.append(URLEncoder.encode(",", "UTF-8"));
+            urlString.append(URLEncoder.encode(Double.toString(routePoints.get(1).getPosition().longitude), "UTF-8"));
+            for (int i = 2; i < routePoints.size() - 1; i++) {
+                urlString.append(URLEncoder.encode("|", "UTF-8"));
+                urlString.append(URLEncoder.encode(Double.toString(routePoints.get(i).getPosition().latitude), "UTF-8"));
+                urlString.append(URLEncoder.encode(",", "UTF-8"));
+                urlString.append(URLEncoder.encode(Double.toString(routePoints.get(i).getPosition().longitude), "UTF-8"));
+            }
+
+            urlString.append("&sensor=");
+            urlString.append(URLEncoder.encode("false", "UTF-8"));
+            urlString.append("&mode=");
+            urlString.append(URLEncoder.encode(navigateMode, "UTF-8"));
+            urlString.append("&alternatives=");
+            urlString.append(URLEncoder.encode("true", "UTF-8"));
+            urlString.append("&key=");
+            urlString.append(URLEncoder.encode("AIzaSyAb43dYdHwWWcOFU7hVzVhU9OVt0w5mHgs", "UTF-8"));
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        return urlString.toString();
+    }
+
     public class connectAsyncTask extends AsyncTask<Void, Void, String> {
         private ProgressDialog progressDialog;
         String url;
-        connectAsyncTask(String urlPass){
+
+        connectAsyncTask(String urlPass) {
             url = urlPass;
         }
+
         @Override
         protected void onPreExecute() {
             // TODO Auto-generated method stub
@@ -1914,52 +1975,69 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             progressDialog.setIndeterminate(true);
             progressDialog.show();
         }
+
         @Override
         protected String doInBackground(Void... params) {
-            JSONParser jParser = new JSONParser();
-            return jParser.getJSONFromUrlStack(url);
-        }
-        @Override
-        protected void onPostExecute(String result) {
-            super.onPostExecute(result);
-            progressDialog.hide();
-            if(result!=null){
-                drawPath(result);
-                viewDistance.setText("Celková vzdálenost: " + String.format("%.3f", totalDistance).replace(',', '.')
-                        + " km" + "\n"
-                        + "Režim: " + navigateMode);
+            try {
+                JSONParser jParser = new JSONParser();
+                return jParser.getJSONFromUrlStack(url);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return "";
             }
         }
 
-        private void drawPath(String  result) {
+        @Override
+        protected void onPostExecute(String result) {
+            super.onPostExecute(result);
+            try {
+                progressDialog.hide();
+                if (result != null) {
+                    drawPath(result);
+                    viewDistance.setText("Celková vzdálenost: " + String.format("%.3f", totalDistance).replace(',', '.')
+                            + " km" + "\n"
+                            + "Režim: " + navigateMode);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        private void drawPath(String result) {
             try {
                 //Tranform the string into a json object
                 final JSONObject json = new JSONObject(result);
                 JSONArray routeArray = json.getJSONArray("routes");
-                JSONObject routes = routeArray.getJSONObject(0);
-                JSONObject overviewPolylines = routes.getJSONObject("overview_polyline");
-                String encodedString = overviewPolylines.getString("points");
-                List<LatLng> list = decodePoly(encodedString);
-                Polyline line = googleMap.addPolyline(new PolylineOptions()
-                        .addAll(list)
-                        .width(4)
-                        //.color(Color.parseColor("#05b1fb"))//Google maps blue color
-                        .color(getResources().getColor(R.color.colorAccent))
-                        .clickable(true)
-                        .geodesic(true)
-                );
-                polylines.add(line);
+                if (routeArray.length() > 0) {
 
-                //get distance route
-                JSONArray legs = routes.getJSONArray("legs");
-                JSONObject steps = legs.getJSONObject(0);
-                JSONObject distance = steps.getJSONObject("distance");
-                Log.d("Distance", distance.toString());
-                double dist = Double.parseDouble(distance.getString("text").replaceAll("[^\\.0123456789]","") );
-                totalDistance += dist;
 
-            }
-            catch (JSONException e) {
+                    JSONObject routes = routeArray.getJSONObject(0);
+                    JSONObject overviewPolylines = routes.getJSONObject("overview_polyline");
+                    String encodedString = overviewPolylines.getString("points");
+                    List<LatLng> list = decodePoly(encodedString);
+                    Polyline line = googleMap.addPolyline(new PolylineOptions()
+                            .addAll(list)
+                            .width(4)
+                            //.color(Color.parseColor("#05b1fb"))//Google maps blue color
+                            .color(getResources().getColor(R.color.colorAccent))
+                            .clickable(true)
+                            .geodesic(true)
+                    );
+                    polylines.add(line);
+
+                    //get distance route
+                    JSONArray legs = routes.getJSONArray("legs");
+                    JSONObject steps = legs.getJSONObject(0);
+                    JSONObject distance = steps.getJSONObject("distance");
+                    Log.d("Distance", distance.toString());
+                    double dist = Double.parseDouble(distance.getString("text").replaceAll("[^\\.0123456789]", ""));
+                    totalDistance += dist;
+                } else {
+                    String available_modes = json.getString("available_travel_modes");
+                    Toast.makeText(getApplicationContext(), "Zvoleny mod navigace neni dostupny! Zvolte prosim jiny z nasledujicich - " + available_modes, Toast.LENGTH_LONG).show();
+                }
+
+            } catch (JSONException e) {
                 e.printStackTrace();
             }
         }
@@ -1990,8 +2068,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
                 lng += dlng;
 
-                LatLng p = new LatLng( (((double) lat / 1E5)),
-                        (((double) lng / 1E5) ));
+                LatLng p = new LatLng((((double) lat / 1E5)),
+                        (((double) lng / 1E5)));
                 poly.add(p);
             }
 

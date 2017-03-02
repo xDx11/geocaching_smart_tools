@@ -13,7 +13,7 @@
 
     <item
         android:id="@+id/action_geofence_radius"
-        android:title="Radius options"
+        android:title="Nastavení radiusu"
         xmlparser:showAsAction="always"
         />
 
