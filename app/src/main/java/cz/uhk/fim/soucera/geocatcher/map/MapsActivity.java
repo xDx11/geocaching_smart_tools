@@ -82,7 +82,6 @@ import cz.uhk.fim.soucera.geocatcher.Caches_DB;
 import cz.uhk.fim.soucera.geocatcher.R;
 import cz.uhk.fim.soucera.geocatcher.caches.SelectCachesActivity;
 import cz.uhk.fim.soucera.geocatcher.caches.SelectDetailCacheActivity;
-import cz.uhk.fim.soucera.geocatcher.features.PlanningRoute;
 import cz.uhk.fim.soucera.geocatcher.features.PointToPointActivity;
 import cz.uhk.fim.soucera.geocatcher.utils.JSONParser;
 import cz.uhk.fim.soucera.geocatcher.waypoints.DetailWptActivity;

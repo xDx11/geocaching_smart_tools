@@ -1,4 +1,4 @@
-package cz.uhk.fim.soucera.geocatcher.features;
+package cz.uhk.fim.soucera.geocatcher.map;
 
 import android.util.Log;
 import com.google.android.gms.maps.model.Marker;
