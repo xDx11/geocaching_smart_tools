@@ -1,21 +1,28 @@
+# Geoca(t)cher SMART
+
+More information / VÃ­ce informacÃ­:
+[Wiki](https://github.com/xDx11/geocatcher_smart/wiki)
+
+
+# ZadÃ¡nÃ­
 Titul: 		Geocaching smart tools
-Podtitul: 	Podpùrná aplikace s pomocnımi nástroji pro GPS hru Geocaching - https://cs.wikipedia.org/wiki/Geocaching
+Podtitul: 	PodpÅ¯rnÃ¡ aplikace s pomocnÃ½mi nÃ¡stroji pro GPS hru Geocaching - https://cs.wikipedia.org/wiki/Geocaching
 Mob. platforma: Android
 
-Cíl: Nejdøíve bych rád zmínil, e jedním z hlavních cílù hry Geocaching je dost lidi zpìt do pøírody za pomoci moderních technologií a vyuívání GPS.
-     Kolikrát je ale samotná pøprava pro naplánování pomìrnì nároèná a ve finále je uivatel, kterı se sice dostane do pøírody, stále nucen koukat do mobilního zaøízení a sledovat geocache a trasu.
-     Cílem aplikace je tedy zefektivnìní hry a minimalizovaní èasu nutného sledování zaøízení resp. zvıšení poitku ze hry a z pøírody èi okolí.
+CÃ­l: NejdÅ™Ã­ve bych rÃ¡d zmÃ­nil, Å¾e jednÃ­m z hlavnÃ­ch cÃ­lÅ¯ hry Geocaching je dost lidi zpÄ›t do pÅ™Ã­rody za pomoci modernÃ­ch technologiÃ­ a vyuÅ¾Ã­vÃ¡nÃ­ GPS.
+     KolikrÃ¡t je ale samotnÃ¡ pÅ™prava pro naplÃ¡novÃ¡nÃ­ pomÄ›rnÄ› nÃ¡roÄnÃ¡ a ve finÃ¡le je uÅ¾ivatel, kterÃ½ se sice dostane do pÅ™Ã­rody, stÃ¡le nucen koukat do mobilnÃ­ho zaÅ™Ã­zenÃ­ a sledovat geocache a trasu.
+     CÃ­lem aplikace je tedy zefektivnÄ›nÃ­ hry a minimalizovanÃ­ Äasu nutnÃ©ho sledovÃ¡nÃ­ zaÅ™Ã­zenÃ­ resp. zvÃ½Å¡enÃ­ poÅ¾itku ze hry a z pÅ™Ã­rody Äi okolÃ­.
 
-SMART èást:
-	- práce s mapou a geolokací
+SMART ÄÃ¡st:
+	- prÃ¡ce s mapou a geolokacÃ­
 		- geofancing
-		- meøení vzdáleností k cílovému místu
-		- algoritmy pro plánování trasy pro sbírání geocaches.
-	- práce se sensory mobilu pro vyuití jako pomocnıch nástrojù ke høe
+		- meÅ™enÃ­ vzdÃ¡lenostÃ­ k cÃ­lovÃ©mu mÃ­stu
+		- algoritmy pro plÃ¡novÃ¡nÃ­ trasy pro sbÃ­rÃ¡nÃ­ geocaches.
+	- prÃ¡ce se sensory mobilu pro vyuÅ¾itÃ­ jako pomocnÃ½ch nÃ¡strojÅ¯ ke hÅ™e
 		- kompas, 
-		- "PointToPoint" radar (jdi za šipkou)
-		- svìtlo atd.
-NonSmart èást:
-	- ruèní zadávání geocaches
-	- hromadnı import geocaches
-	- poznámky
+		- "PointToPoint" radar (jdi za Å¡ipkou)
+		- svÄ›tlo atd.
+NonSmart ÄÃ¡st:
+	- ruÄnÃ­ zadÃ¡vÃ¡nÃ­ geocaches
+	- hromadnÃ½ import geocaches
+	- poznÃ¡mky
