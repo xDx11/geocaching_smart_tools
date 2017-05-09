@@ -5,15 +5,16 @@ More information / Více informací:
 
 
 # Zadání
-Titul: 		Geocaching smart tools
-Podtitul: 	Podpůrná aplikace s pomocnými nástroji pro GPS hru Geocaching - https://cs.wikipedia.org/wiki/Geocaching
-Mob. platforma: Android
+Titul: 		Geocaching smart tools <br />
+Podtitul: 	Podpůrná aplikace s pomocnými nástroji pro GPS hru Geocaching - https://cs.wikipedia.org/wiki/Geocaching<br />
+Mob. platforma: Android<br />
 
-Cíl: Nejdříve bych rád zmínil, že jedním z hlavních cílů hry Geocaching je dost lidi zpět do přírody za pomoci moderních technologií a využívání GPS.
-     Kolikrát je ale samotná přprava pro naplánování poměrně náročná a ve finále je uživatel, který se sice dostane do přírody, stále nucen koukat do mobilního zařízení a sledovat geocache a trasu.
-     Cílem aplikace je tedy zefektivnění hry a minimalizovaní času nutného sledování zařízení resp. zvýšení požitku ze hry a z přírody či okolí.
+### Cíl: <br />
+- Nejdříve bych rád zmínil, že jedním z hlavních cílů hry Geocaching je dost lidi zpět do přírody za pomoci moderních technologií a využívání GPS. <br />
+- Kolikrát je ale samotná přprava pro naplánování poměrně náročná a ve finále je uživatel, který se sice dostane do přírody, stále nucen koukat do mobilního zařízení a sledovat geocache a trasu. <br />
+- Cílem aplikace je tedy zefektivnění hry a minimalizovaní času nutného sledování zařízení resp. zvýšení požitku ze hry a z přírody či okolí. <br />
 
-SMART část:
+### SMART část:
 	- práce s mapou a geolokací
 		- geofancing
 		- meření vzdáleností k cílovému místu
@@ -22,7 +23,7 @@ SMART část:
 		- kompas, 
 		- "PointToPoint" radar (jdi za šipkou)
 		- světlo atd.
-NonSmart část:
+### NonSmart část:
 	- ruční zadávání geocaches
 	- hromadný import geocaches
 	- poznámky
